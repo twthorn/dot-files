@@ -1,0 +1,46 @@
+" 0 preamble ============================================================== {{{
+
+" Here are some common settings that you may wish to edit to personalize your
+" yim experience.
+" ========================================================================= }}}
+
+" 1 common settings ======================================================= {{{
+
+set background=dark    " Swap between a light/dark theme
+let mapleader = "\\"   " The leader is used as a prefix for many shortcuts
+set splitbelow         " Open new splits below, this includes opening completion
+                       " preview windows in a buffer below as opposed to above
+imap jk <Esc>
+
+function! Osc52Yank()
+  let buffer=system('base64 -w0', @0)
+  let buffer=substitute(buffer, "\n$", "", "")
+  let buffer='\e]52;c;'.buffer.'\x07'
+  if $TMUX != ''
+    let buffer='\ePtmux;\e'.buffer.'\e\\'
+  endif
+  silent exe "!echo -ne ".shellescape(buffer)." > ".shellescape("/dev/tty")
+endfunction
+command! Osc52CopyYank call Osc52Yank()
+nnoremap <leader>y :Osc52CopyYank<cr>
+
+set clipboard=unnamed
+
+autocmd vimenter * NERDTree
+
+nnoremap <C-J> <C-W><C-J>
+nnoremap <C-K> <C-W><C-K>
+nnoremap <C-L> <C-W><C-L>
+nnoremap <C-H> <C-W><C-H>
+
+set number
+
+autocmd bufenter * if (winnr("$") == 1 && exists("b:NERDTree") && b:NERDTree.isTabTree()) | q | endif
+
+filetype plugin on
+
+let NERDTreeIgnore = ['\.pyc$']
+
+" ========================================================================= }}}
+" vim: set ft=vim tw=72 :
+

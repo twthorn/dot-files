@@ -1,0 +1,5 @@
+#!/bin/bash
+echo Generating javascript tags
+ctags -R --exclude=*.py --exclude=virtualenv_run -f .git/javascript.tags
+echo Generating Python tags
+ctags -L <(find . -name '*.py' | cut -c3-) --fields=+iaS --python-kinds=-i --extra=+q --extra=f -f .git/python.tags $(python -c "import os, sys; print(' '.join('{}'.format(d) for d in sys.path if os.path.isdir(d)))")
