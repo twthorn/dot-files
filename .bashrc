@@ -17,7 +17,6 @@ alias gentagpy="ctags -L <(find . -name '*.py' | cut -c3-) --fields=+iaS --pytho
 alias fixssh='export $(tmux2 show-environment | grep \^SSH_AUTH_SOCK=)'
 
 # tmux
-alias tmux="tmux2"
 alias t="tmux attach"
 # tpm_folder=~/.tmux/plugins/tpm
 # if [[ ! -d $tpm_folder ]]; then
