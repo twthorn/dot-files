@@ -60,6 +60,9 @@ if has('persistent_undo')
 endif
 
 " plugin settings
+" set completor-vim to homedir
+let g:completor_python_binary = '/usr/local/bin/python3.6'
+
 let g:ctrlp_match_func = { 'match': 'pymatcher#PyMatch' }
 if executable('rg')
   let g:ctrlp_user_command = 'rg %s --smart-case --files --color=never --glob ""'
@@ -150,6 +153,9 @@ endfunction
 " Use `tab` key to select completions.  Default is arrow keys.
 inoremap <expr> <Tab> pumvisible() ? "\<C-n>" : "\<Tab>"
 inoremap <expr> <S-Tab> pumvisible() ? "\<C-p>" : "\<S-Tab>"
+
+" copy to system clipboard
+vmap <C-y> "+y
 
 " Use tab to trigger auto completion.  Default suggests completions as you type.
 let g:completor_auto_trigger = 0
