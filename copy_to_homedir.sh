@@ -4,5 +4,6 @@ do
     echo 'cp -r' $f $HOME
     cp -r $f $HOME
 done
-echo "appending gitconfig"
-cat .gitconfig >> $HOME/.gitconfig
+echo "setting up ctags in git configs"
+git config --global init.templatedir '~/.git_template'
+git config --global alias.ctags '!.git/hooks/ctags'
