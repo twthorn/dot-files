@@ -1,5 +1,3 @@
-[core]
-	excludesfile = /nail/home/thomast/.gitignore_global
 [init]
 	templatedir = ~/.git_template
 [alias]
