@@ -3,11 +3,13 @@
 alias gco='git checkout'
 alias gco="git checkout"
 alias gdc="git diff --cached"
+alias gp="git pull"
 alias gpom="git push origin master"
 alias gmnf="git merge --no-ff"
 alias gcm="git commit -m "
 alias gdom="git diff origin/master"
 alias gs="git status"
+alias gap="git add -p"
 
 # ctags
 alias gentagpy="ctags -L <(find . -name '*.py' | cut -c3-) --fields=+iaS --python-kinds=-i --extra=+q -f .git/python.tags"
