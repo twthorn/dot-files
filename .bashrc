@@ -11,6 +11,9 @@ alias gdom="git diff origin/master"
 alias gs="git status"
 alias gap="git add -p"
 
+# shell
+alias ls='ls -G'
+
 # ctags
 alias gentagpy="ctags -L <(find . -name '*.py' | cut -c3-) --fields=+iaS --python-kinds=-i --extra=+q -f .git/python.tags"
 
