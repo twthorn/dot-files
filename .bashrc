@@ -13,6 +13,7 @@ alias gap="git add -p"
 
 # shell
 alias ls='ls -G'
+export LSCOLORS="fxexcxdxbxegedabagacad"
 
 # ctags
 alias gentagpy="ctags -L <(find . -name '*.py' | cut -c3-) --fields=+iaS --python-kinds=-i --extra=+q -f .git/python.tags"
@@ -23,11 +24,3 @@ alias fixssh='export $(tmux2 show-environment | grep \^SSH_AUTH_SOCK=)'
 
 # tmux
 alias t="tmux attach"
-# tpm_folder=~/.tmux/plugins/tpm
-# if [[ ! -d $tpm_folder ]]; then
-#     echo "Tmux Plugin Manager not found. Installing it now..."
-#     mkdir -p $tpm_folder
-#     git clone https://github.com/tmux-plugins/tpm $tpm_folder > /dev/null 2>&1
-# else
-#     git -C $tpm_folder pull > /dev/null 2>&1
-# fi
