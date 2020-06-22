@@ -1,4 +1,10 @@
 #!/bin/bash
+# source bash prompt
+  source ~/.bash_prompt
+
+# prevent accidental shell exits
+export IGNOREEOF=42
+
 # git
 alias gco='git checkout'
 alias gco="git checkout"
