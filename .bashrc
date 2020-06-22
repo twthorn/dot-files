@@ -24,3 +24,8 @@ alias fixssh='export $(tmux2 show-environment | grep \^SSH_AUTH_SOCK=)'
 
 # tmux
 alias t="tmux attach"
+
+# python
+if command -v pyenv 1>/dev/null 2>&1; then
+  eval "$(pyenv init -)"
+fi
