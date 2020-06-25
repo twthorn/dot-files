@@ -1,6 +1,9 @@
 #!/bin/bash
+# If not running interactively, don't do anything
+[[ $- == *i* ]] || return
+
 # source bash prompt
-  source ~/.bash_prompt
+source ~/.bash_prompt
 
 # prevent accidental shell exits
 export IGNOREEOF=42
