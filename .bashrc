@@ -27,7 +27,6 @@ export LSCOLORS="fxexcxdxbxegedabagacad"
 # ctags
 alias gentagpy="ctags -L <(find . -name '*.py' | cut -c3-) --fields=+iaS --python-kinds=-i --extra=+q -f .git/python.tags"
 
-
 # ssh
 alias fixssh='export $(tmux2 show-environment | grep \^SSH_AUTH_SOCK=)'
 
