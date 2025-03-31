@@ -11,11 +11,16 @@ esac
 # prevent accidental shell exits
 export IGNOREEOF=42
 
+# Append to the history file immediately after each command
+shopt -s histappend               # Append history instead of overwriting
+PROMPT_COMMAND="history -a; history -c; history -r; $PROMPT_COMMAND"
+
 # git
 alias gco='git checkout'
 alias gdc="git diff --cached"
 alias gp="git pull"
 alias gpom="git push origin master"
+alias gpom="git push origin HEAD"
 alias gmnf="git merge --no-ff"
 alias gcm="git commit -m "
 alias gdom="git diff origin/master"
