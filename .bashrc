@@ -10,6 +10,7 @@ esac
 
 # prevent accidental shell exits
 export IGNOREEOF=42
+export PATH="/opt/homebrew/bin:/opt/homebrew/sbin:$PATH"
 
 # Append to the history file immediately after each command
 shopt -s histappend               # Append history instead of overwriting
