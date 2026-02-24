@@ -66,7 +66,10 @@ if [[ "$(uname)" == "Darwin" ]]; then
     if [[ -f "$SCRIPT_DIR/iterm_profile.json" ]]; then
         mkdir -p "$ITERM_DYNAMIC_PROFILES"
         cp "$SCRIPT_DIR/iterm_profile.json" "$ITERM_DYNAMIC_PROFILES/"
-        echo "iTerm2 profile installed. Restart iTerm2 to load it."
+        echo "iTerm2 profile installed."
+        # Set it as the default profile
+        defaults write com.googlecode.iterm2 "Default Bookmark Guid" -string "dotfiles-dark-profile-001"
+        echo "iTerm2 default profile set. Restart iTerm2 to apply."
         echo
     fi
 
