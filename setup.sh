@@ -23,6 +23,19 @@ git config --global init.templatedir '~/.git_template'
 git config --global alias.ctags '!.git/hooks/ctags'
 echo
 
+# Set default shell to bash if not already
+CURRENT_SHELL=$(dscl . -read ~/ UserShell 2>/dev/null | awk '{print $2}' || echo "$SHELL")
+if [[ "$CURRENT_SHELL" != "/bin/bash" ]]; then
+    echo "Current default shell is $CURRENT_SHELL"
+    echo "Changing default shell to /bin/bash..."
+    chsh -s /bin/bash
+    echo "Default shell changed. Open a new terminal for it to take effect."
+    echo
+else
+    echo "Default shell is already bash."
+    echo
+fi
+
 # Check and apply keyboard repeat settings (macOS only)
 if [[ "$(uname)" == "Darwin" ]]; then
     NEEDS_RESTART=false
