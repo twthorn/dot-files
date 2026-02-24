@@ -1,0 +1,2 @@
+# Private config files (contain hostnames, credentials, etc.)
+.bashrc_private

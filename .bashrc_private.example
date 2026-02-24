@@ -1,0 +1,5 @@
+# Private bash configuration - copy to ~/.bashrc_private and customize
+# This file is sourced by .bashrc if it exists
+
+# SSH aliases for remote hosts
+# alias myserver="ssh user@hostname.example.com"

@@ -1,0 +1,6 @@
+:imap jk <Esc>
+" Use ctrl-[hjkl] to select the active split!
+noremap <leader>h :wincmd h<CR>
+noremap <leader>j :wincmd j<CR>
+noremap <leader>k :wincmd k<CR>
+noremap <leader>l :wincmd l<CR>

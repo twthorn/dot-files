@@ -5,6 +5,8 @@ if empty(glob('~/.vim/autoload/plug.vim'))
          autocmd VimEnter * PlugInstall --sync | source $MYVIMRC
          endif
 
+nmap <C-o> :action Back<CR>
+
 " install plugins
 call plug#begin('~/.vim/plugged')
 Plug 'metalelf0/supertab'
@@ -41,7 +43,6 @@ set encoding=utf-8
 " theme settings
 set termguicolors
 set background=dark
-let g:solarized_use16 = 1
 colorscheme solarized8_high
 
 " syntax highlighting
