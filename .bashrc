@@ -2,27 +2,53 @@
 # source bash prompt
 source ~/.bash_prompt
 
+# Build PATH - use $HOME for portability across macOS/Linux
+export PATH="/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin"
+# Homebrew (macOS)
+[[ -d /opt/homebrew/bin ]] && export PATH="/opt/homebrew/bin:/opt/homebrew/sbin:$PATH"
+# Go
+[[ -d /usr/local/go/bin ]] && export PATH="/usr/local/go/bin:$PATH"
+[[ -d "$HOME/go/bin" ]] && export PATH="$HOME/go/bin:$PATH"
+# goenv
+export GOENV_ROOT="$HOME/.goenv"
+[[ -d "$GOENV_ROOT/bin" ]] && export PATH="$GOENV_ROOT/bin:$PATH"
+command -v goenv >/dev/null 2>&1 && eval "$(goenv init -)"
+# Java (macOS Homebrew)
+[[ -d /opt/homebrew/opt/openjdk@11/bin ]] && export PATH="/opt/homebrew/opt/openjdk@11/bin:$PATH"
+[[ -d /opt/homebrew/opt/openjdk@11 ]] && export JAVA_HOME=/opt/homebrew/opt/openjdk@11
+# MySQL
+[[ -d /usr/local/opt/mysql/bin ]] && export PATH="/usr/local/opt/mysql/bin:$PATH"
+# Vitess
+export VTDATAROOT=/tmp/vtdataroot
+export VTROOT=~/git/twthorn/vitess
+[[ -d "$HOME/git/twthorn/vitess/bin" ]] && export PATH="${PATH}:$HOME/git/twthorn/vitess/bin"
+# NVM
+export NVM_DIR="$HOME/.nvm"
+[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
+[ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"  # This loads nvm bash_completion
+
 # If not running interactively, don't do anything
 case $- in
     *i*) ;;
       *) return;;
 esac
 
-# prevent accidental shell exits
-export IGNOREEOF=42
-
 # Append to the history file immediately after each command
 shopt -s histappend               # Append history instead of overwriting
 PROMPT_COMMAND="history -a; history -c; history -r; $PROMPT_COMMAND"
+
+# prevent accidental shell exits
+export IGNOREEOF=42
 
 # git
 alias gco='git checkout'
 alias gdc="git diff --cached"
 alias gp="git pull"
 alias gpom="git push origin master"
-alias gpom="git push origin HEAD"
+alias gpoh="git push origin HEAD"
 alias gmnf="git merge --no-ff"
 alias gcm="git commit -m "
+alias gcms="git commit -s -m "
 alias gdom="git diff origin/master"
 alias gs="git status"
 alias gap="git add -p"
@@ -40,20 +66,20 @@ alias gsi="git_interceptor status"
 alias gapi="git_interceptor add -p"
 
 gcobu() {
-    git checkout -b u/$USER/"$1"
+    git checkout -b ${USER}_"$1"
 }
 
 gcou() {
-    git checkout u/$USER/"$1"
+    git checkout ${USER}__"$1"
 }
 
 gpohu() {
-    git push origin HEAD:u/$USER/"$1"
+    git push origin HEAD:${USER}_"$1"
 }
 
 
 gcobui() {
-    git_interceptor checkout -b u/$USER/"$1"
+    git_interceptor checkout -b ${USER}_"$1"
 }
 
 gcobi() {
@@ -61,11 +87,11 @@ gcobi() {
 }
 
 gcoui() {
-    git_interceptor checkout u/$USER/"$1"
+    git_interceptor checkout ${USER}_"$1"
 }
 
 gpohui() {
-    git_interceptor push origin HEAD:u/$USER/"$1"
+    git_interceptor push origin HEAD:${USER}_"$1"
 }
 
 
@@ -97,8 +123,12 @@ function git_interceptor() {
 
 
 # shell
-alias ls='ls -G'
-export LSCOLORS="fxexcxdxbxegedabagacad"
+if [[ "$(uname)" == "Darwin" ]]; then
+    alias ls='ls -G'
+    export LSCOLORS="fxexcxdxbxegedabagacad"
+else
+    alias ls='ls --color=auto'
+fi
 
 # ctags
 alias gentagpy="ctags -L <(find . -name '*.py' | cut -c3-) --fields=+iaS --python-kinds=-i --extra=+q -f .git/python.tags"
@@ -108,7 +138,7 @@ alias fixssh='export $(tmux show-environment | grep \^SSH_AUTH_SOCK=)'
 
 # tmux
 alias t="tmux attach"
-alias tnew='tmux new-session -s "$(basename "$PWD")"'
+alias tnew='tmux new-session -s "$(echo $PWD | sed "s|$HOME/||")"'
 
 # python
 if command -v pyenv 1>/dev/null 2>&1; then
@@ -116,3 +146,6 @@ if command -v pyenv 1>/dev/null 2>&1; then
 fi
 
 complete -W "\`grep -oE '^[a-zA-Z0-9_.-]+:([^=]|$)' Makefile | sed 's/[^a-zA-Z0-9_.-]*$//'\`" make
+
+# Load private aliases/config if present (not tracked in git)
+[[ -f ~/.bashrc_private ]] && source ~/.bashrc_private
