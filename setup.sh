@@ -61,6 +61,15 @@ if [[ "$(uname)" == "Darwin" ]]; then
         echo
     fi
 
+    # Install iTerm2 dynamic profile (macOS only)
+    ITERM_DYNAMIC_PROFILES="$HOME/Library/Application Support/iTerm2/DynamicProfiles"
+    if [[ -f "$SCRIPT_DIR/iterm_profile.json" ]]; then
+        mkdir -p "$ITERM_DYNAMIC_PROFILES"
+        cp "$SCRIPT_DIR/iterm_profile.json" "$ITERM_DYNAMIC_PROFILES/"
+        echo "iTerm2 profile installed. Restart iTerm2 to load it."
+        echo
+    fi
+
     if [[ "$NEEDS_RESTART" == "true" ]]; then
         echo "=============================================="
         echo "  RESTART REQUIRED"
