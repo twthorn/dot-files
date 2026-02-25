@@ -8,6 +8,11 @@ cd "$SCRIPT_DIR"
 echo "=== Dot Files Setup ==="
 echo
 
+# Install dependencies first
+echo "Installing dependencies..."
+"$SCRIPT_DIR/install_dependencies.sh"
+echo
+
 # Copy dot files to home directory
 echo "Copying dot files to $HOME..."
 for f in $(ls -A | egrep '^\.' | grep -v .gitconfig | grep -v ".git$" | grep -v .gitignore)
@@ -23,16 +28,31 @@ git config --global init.templatedir '~/.git_template'
 git config --global alias.ctags '!.git/hooks/ctags'
 echo
 
-# Set default shell to bash if not already
+# Set default shell to modern bash (Homebrew) if available
+if [[ "$(uname)" == "Darwin" ]]; then
+    PREFERRED_BASH="/opt/homebrew/bin/bash"
+else
+    PREFERRED_BASH="/bin/bash"
+fi
+
 CURRENT_SHELL=$(dscl . -read ~/ UserShell 2>/dev/null | awk '{print $2}' || echo "$SHELL")
-if [[ "$CURRENT_SHELL" != "/bin/bash" ]]; then
+if [[ -x "$PREFERRED_BASH" ]] && [[ "$CURRENT_SHELL" != "$PREFERRED_BASH" ]]; then
     echo "Current default shell is $CURRENT_SHELL"
-    echo "Changing default shell to /bin/bash..."
-    chsh -s /bin/bash
+    echo "Changing default shell to $PREFERRED_BASH (modern bash)..."
+    chsh -s "$PREFERRED_BASH"
     echo "Default shell changed. Open a new terminal for it to take effect."
     echo
+elif [[ "$CURRENT_SHELL" == "$PREFERRED_BASH" ]]; then
+    echo "Default shell is already modern bash ($PREFERRED_BASH)."
+    echo
+elif [[ "$CURRENT_SHELL" == *"bash"* ]]; then
+    echo "Default shell is bash ($CURRENT_SHELL)."
+    echo
 else
-    echo "Default shell is already bash."
+    echo "Current default shell is $CURRENT_SHELL"
+    echo "Changing default shell to bash..."
+    chsh -s /bin/bash
+    echo "Default shell changed. Open a new terminal for it to take effect."
     echo
 fi
 
