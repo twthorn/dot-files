@@ -66,10 +66,16 @@ if [[ "$(uname)" == "Darwin" ]]; then
     if [[ -f "$SCRIPT_DIR/iterm_profile.json" ]]; then
         mkdir -p "$ITERM_DYNAMIC_PROFILES"
         cp "$SCRIPT_DIR/iterm_profile.json" "$ITERM_DYNAMIC_PROFILES/"
-        echo "iTerm2 profile installed."
-        # Set it as the default profile
-        defaults write com.googlecode.iterm2 "Default Bookmark Guid" -string "dotfiles-dark-profile-001"
-        echo "iTerm2 default profile set. Restart iTerm2 to apply."
+        echo "iTerm2 profile installed. Restart iTerm2 and set 'DotFiles Dark' as default in Settings → Profiles."
+        echo
+    fi
+
+    # Install Cursor settings (macOS only)
+    CURSOR_USER_DIR="$HOME/Library/Application Support/Cursor/User"
+    if [[ -d "$SCRIPT_DIR/cursor" ]] && [[ -d "$CURSOR_USER_DIR" ]]; then
+        cp "$SCRIPT_DIR/cursor/settings.json" "$CURSOR_USER_DIR/"
+        cp "$SCRIPT_DIR/cursor/keybindings.json" "$CURSOR_USER_DIR/"
+        echo "Cursor settings installed. Restart Cursor to apply."
         echo
     fi
 

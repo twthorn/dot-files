@@ -33,9 +33,17 @@ case $- in
       *) return;;
 esac
 
-# Append to the history file immediately after each command
+# Bash history settings
+# Keep sessions separate but persist all commands immediately
 shopt -s histappend               # Append history instead of overwriting
-PROMPT_COMMAND="history -a; history -c; history -r; $PROMPT_COMMAND"
+HISTSIZE=10000                    # Commands to keep in memory per session
+HISTFILESIZE=50000                # Total commands to keep in file
+HISTCONTROL=ignoredups:erasedups  # Ignore duplicates
+HISTTIMEFORMAT='%F %T '           # Add timestamps to history
+
+# Save history after each command (but don't reload from other sessions)
+# This keeps sessions independent while ensuring all history is persisted
+PROMPT_COMMAND="history -a; $PROMPT_COMMAND"
 
 # prevent accidental shell exits
 export IGNOREEOF=42
