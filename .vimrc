@@ -14,7 +14,9 @@ Plug 'hashivim/vim-terraform'
 Plug 'juliosueiras/vim-terraform-completion'
 Plug 'ctrlpvim/ctrlp.vim'
 Plug 'lifepillar/vim-solarized8'
-Plug 'maralla/completor.vim'
+if has('python') || has('python3')
+  Plug 'maralla/completor.vim'
+endif
 Plug 'rodjek/vim-puppet'
 Plug 'scrooloose/nerdtree'
 Plug 'tpope/vim-commentary'
@@ -127,7 +129,9 @@ let NERDTreeIgnore = ['\.pyc$']
 " copy to system clipboard, requires clipboard unnamed
 vmap <C-y> "+y
 
-" completor.vim settings
-inoremap <expr> <Tab> pumvisible() ? "\<C-n>" : "\<Tab>"
-inoremap <expr> <S-Tab> pumvisible() ? "\<C-p>" : "\<S-Tab>"
-inoremap <expr> <cr> pumvisible() ? "\<C-y>" : "\<cr>"
+" completor.vim settings (only if plugin is loaded)
+if has('python') || has('python3')
+  inoremap <expr> <Tab> pumvisible() ? "\<C-n>" : "\<Tab>"
+  inoremap <expr> <S-Tab> pumvisible() ? "\<C-p>" : "\<S-Tab>"
+  inoremap <expr> <cr> pumvisible() ? "\<C-y>" : "\<cr>"
+endif

@@ -35,6 +35,9 @@ esac
 
 # Append to the history file immediately after each command
 shopt -s histappend               # Append history instead of overwriting
+HISTSIZE=100000                   # Lines to keep in memory
+HISTFILESIZE=100000               # Lines to keep in ~/.bash_history
+HISTCONTROL=ignoredups:erasedups  # No duplicate entries
 PROMPT_COMMAND="history -a; history -c; history -r; $PROMPT_COMMAND"
 
 # prevent accidental shell exits
