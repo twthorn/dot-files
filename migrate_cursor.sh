@@ -3,6 +3,28 @@
 # Cursor Workspace Migration Script
 # Migrates chat history from old Mac workspaces to new Mac workspaces
 #
+# WHY THIS IS NEEDED:
+# When you copy your Cursor settings from an old Mac to a new Mac (even if all your
+# project paths are identical), Cursor generates NEW workspace hashes the first time
+# you open each project. This means your chat history from the old Mac won't show up
+# because it's stored under the OLD workspace hashes.
+#
+# This script matches projects by their folder path and copies the chat database
+# from the old workspace to the new workspace.
+#
+# SETUP (before running this script):
+# 1. On OLD Mac: Quit Cursor, then zip and AirDrop:
+#    - ~/Library/Application Support/Cursor (entire directory)
+# 2. On NEW Mac: Quit Cursor, unzip to ~/Library/Application Support/Cursor
+# 3. Open Cursor on NEW Mac and open each project at least once
+#    (this creates the new workspace hashes)
+# 4. Quit Cursor again
+# 5. Run this script: ./migrate_cursor.sh --dry-run (to preview)
+#    Then run: ./migrate_cursor.sh (to actually migrate)
+#
+# ALTERNATIVE: Use the "Cursor Chat Transfer" extension, but it only does
+# one workspace at a time. This script migrates all workspaces automatically.
+#
 # Usage: ./migrate_cursor.sh [--dry-run]
 #        --dry-run: Show what would be migrated without making changes
 
