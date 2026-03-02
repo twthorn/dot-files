@@ -111,3 +111,7 @@ if [[ "$(uname)" == "Darwin" ]]; then
 fi
 
 echo "Setup complete!"
+echo
+echo "Reloading .bashrc..."
+source "$HOME/.bashrc"
+echo "Environment updated. Changes are now active in this shell."
