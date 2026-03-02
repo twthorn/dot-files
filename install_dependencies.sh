@@ -5,6 +5,9 @@ set -e
 echo "=== Installing Dependencies ==="
 echo
 
+# Core packages common across all OSes
+COMMON_PACKAGES="bash tmux git tig vim ctags maven"
+
 # Detect OS
 OS="$(uname)"
 
@@ -25,19 +28,10 @@ if [[ "$OS" == "Darwin" ]]; then
 
     echo "Installing packages via Homebrew..."
 
-    # Core shell tools
-    PACKAGES=(
-        bash        # Modern bash (5.x) with proper readline support
-        tmux        # Terminal multiplexer
-        git         # Latest git
-        tig         # Text-mode interface for git
-        macvim      # Vim with Python/Ruby/Lua support (provides 'vim' command)
-        ctags       # For code navigation
-        pyenv       # Python version management
-        goenv       # Go version management
-    )
+    # macOS-specific packages (pyenv and goenv for version management)
+    MACOS_PACKAGES="$COMMON_PACKAGES pyenv goenv"
 
-    for pkg in "${PACKAGES[@]}"; do
+    for pkg in $MACOS_PACKAGES; do
         if brew list "$pkg" &>/dev/null; then
             echo "  $pkg: already installed"
         else
@@ -62,19 +56,19 @@ elif [[ "$OS" == "Linux" ]]; then
     if command -v apt-get &>/dev/null; then
         echo "Installing packages via apt..."
         sudo apt-get update
-        sudo apt-get install -y bash tmux git tig vim ctags
+        sudo apt-get install -y $COMMON_PACKAGES
     elif command -v dnf &>/dev/null; then
         echo "Installing packages via dnf..."
-        sudo dnf install -y bash tmux git tig vim ctags
+        sudo dnf install -y $COMMON_PACKAGES
     elif command -v yum &>/dev/null; then
         echo "Installing packages via yum..."
-        sudo yum install -y bash tmux git tig vim ctags
+        sudo yum install -y $COMMON_PACKAGES
     elif command -v pacman &>/dev/null; then
         echo "Installing packages via pacman..."
-        sudo pacman -S --noconfirm bash tmux git tig vim ctags
+        sudo pacman -S --noconfirm $COMMON_PACKAGES
     else
         echo "Warning: Could not detect package manager. Please install manually:"
-        echo "  bash, tmux, git, tig, vim, ctags"
+        echo "  $COMMON_PACKAGES"
     fi
     echo
 else
