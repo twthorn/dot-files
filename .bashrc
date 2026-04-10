@@ -18,10 +18,14 @@ command -v goenv >/dev/null 2>&1 && eval "$(goenv init -)"
 [[ -d /opt/homebrew/opt/openjdk@11 ]] && export JAVA_HOME=/opt/homebrew/opt/openjdk@11
 # MySQL
 [[ -d /usr/local/opt/mysql/bin ]] && export PATH="/usr/local/opt/mysql/bin:$PATH"
-# Vitess
+[[ -d /opt/homebrew/opt/mysql/bin ]] && export PATH="/opt/homebrew/opt/mysql/bin:$PATH"
+
+# Vitess development environment
 export VTDATAROOT=/tmp/vtdataroot
 export VTROOT=~/git/twthorn/vitess
 [[ -d "$HOME/git/twthorn/vitess/bin" ]] && export PATH="${PATH}:$HOME/git/twthorn/vitess/bin"
+# MySQL root for Vitess tests (Homebrew location)
+[[ -d /opt/homebrew/opt/mysql ]] && export VT_MYSQL_ROOT=/opt/homebrew/opt/mysql
 # NVM
 export NVM_DIR="$HOME/.nvm"
 [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm

@@ -6,7 +6,7 @@ echo "=== Installing Dependencies ==="
 echo
 
 # Core packages common across all OSes
-COMMON_PACKAGES="bash tmux git tig vim ctags maven"
+COMMON_PACKAGES="bash tmux git tig vim ctags maven mysql"
 
 # Detect OS
 OS="$(uname)"
