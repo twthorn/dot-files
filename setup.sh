@@ -10,7 +10,7 @@ echo
 
 # Install dependencies first
 echo "Installing dependencies..."
-"$SCRIPT_DIR/install_dependencies.sh"
+"$SCRIPT_DIR/scripts/install_dependencies.sh"
 echo
 
 # Copy dot files to home directory
@@ -21,6 +21,18 @@ do
     cp -r "$f" "$HOME"
 done
 echo
+
+# Install tmux plugins via TPM (must run after dot files are copied so ~/.tmux.conf is current)
+TPM_DIR="$HOME/.tmux/plugins/tpm"
+if [[ -x "$TPM_DIR/bin/install_plugins" ]]; then
+    # Reload tmux config first so the running server picks up TMUX_PLUGIN_MANAGER_PATH
+    if tmux list-sessions &>/dev/null; then
+        tmux source-file ~/.tmux.conf 2>/dev/null
+    fi
+    echo "Installing tmux plugins..."
+    "$TPM_DIR/bin/install_plugins"
+    echo
+fi
 
 # Set up git ctags integration
 echo "Setting up ctags in git configs..."
@@ -90,15 +102,6 @@ if [[ "$(uname)" == "Darwin" ]]; then
         echo
     fi
 
-    # Install Cursor settings (macOS only)
-    CURSOR_USER_DIR="$HOME/Library/Application Support/Cursor/User"
-    if [[ -d "$SCRIPT_DIR/cursor" ]] && [[ -d "$CURSOR_USER_DIR" ]]; then
-        cp "$SCRIPT_DIR/cursor/settings.json" "$CURSOR_USER_DIR/"
-        cp "$SCRIPT_DIR/cursor/keybindings.json" "$CURSOR_USER_DIR/"
-        echo "Cursor settings installed. Restart Cursor to apply."
-        echo
-    fi
-
     if [[ "$NEEDS_RESTART" == "true" ]]; then
         echo "=============================================="
         echo "  RESTART REQUIRED"
@@ -112,6 +115,19 @@ fi
 
 echo "Setup complete!"
 echo
+
+# Reload .bashrc in all running tmux bash panes
+if tmux list-sessions &>/dev/null; then
+    echo "Reloading .bashrc in all tmux bash panes..."
+    tmux list-panes -a -F '#{session_name}:#{window_index}.#{pane_index} #{pane_current_command}' | while read pane cmd; do
+        if [[ "$cmd" == "bash" ]] || [[ "$cmd" == "-bash" ]]; then
+            tmux send-keys -t "$pane" "source ~/.bashrc" C-m
+            echo "  reloaded: $pane"
+        fi
+    done
+    echo
+fi
+
 echo "Reloading .bashrc..."
 source "$HOME/.bashrc"
 echo "Environment updated. Changes are now active in this shell."
