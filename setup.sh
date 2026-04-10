@@ -24,6 +24,7 @@ echo
 
 # Install tmux plugins via TPM (must run after dot files are copied so ~/.tmux.conf is current)
 TPM_DIR="$HOME/.tmux/plugins/tpm"
+mkdir -p "$HOME/.tmux/resurrect"
 if [[ -x "$TPM_DIR/bin/install_plugins" ]]; then
     # Reload tmux config first so the running server picks up TMUX_PLUGIN_MANAGER_PATH
     if tmux list-sessions &>/dev/null; then
@@ -40,14 +41,14 @@ git config --global init.templatedir '~/.git_template'
 git config --global alias.ctags '!.git/hooks/ctags'
 echo
 
-# Set default shell to modern bash (Homebrew) if available
+# Set default shell to bash
 if [[ "$(uname)" == "Darwin" ]]; then
     PREFERRED_BASH="/opt/homebrew/bin/bash"
+    CURRENT_SHELL=$(dscl . -read ~/ UserShell 2>/dev/null | awk '{print $2}' || echo "$SHELL")
 else
     PREFERRED_BASH="/bin/bash"
+    CURRENT_SHELL="$(getent passwd "$USER" 2>/dev/null | cut -d: -f7 || echo "$SHELL")"
 fi
-
-CURRENT_SHELL=$(dscl . -read ~/ UserShell 2>/dev/null | awk '{print $2}' || echo "$SHELL")
 if [[ -x "$PREFERRED_BASH" ]] && [[ "$CURRENT_SHELL" != "$PREFERRED_BASH" ]]; then
     echo "Current default shell is $CURRENT_SHELL"
     echo "Changing default shell to $PREFERRED_BASH (modern bash)..."
