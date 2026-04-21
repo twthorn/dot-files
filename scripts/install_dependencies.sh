@@ -51,25 +51,44 @@ if [[ "$OS" == "Darwin" ]]; then
     fi
 
 elif [[ "$OS" == "Linux" ]]; then
-    # Package name mappings for Linux (ctags -> universal-ctags, mysql -> mysql-server)
-    LINUX_PACKAGES="$COMMON_PACKAGES universal-ctags mysql-server"
+    # Map package names to the binary they provide for "already installed" checks
+    # Format: "package_name:binary_name"
+    LINUX_PACKAGES="bash:bash tmux:tmux git:git tig:tig vim:vim maven:mvn universal-ctags:ctags mysql-server:mysql"
 
+    # Detect package manager
     if command -v apt-get &>/dev/null; then
-        echo "Installing packages via apt..."
-        sudo apt-get update
-        sudo apt-get install -y $LINUX_PACKAGES
+        PKG_MGR="apt"
     elif command -v dnf &>/dev/null; then
-        echo "Installing packages via dnf..."
-        sudo dnf install -y $LINUX_PACKAGES
+        PKG_MGR="dnf"
     elif command -v yum &>/dev/null; then
-        echo "Installing packages via yum..."
-        sudo yum install -y $LINUX_PACKAGES
+        PKG_MGR="yum"
     elif command -v pacman &>/dev/null; then
-        echo "Installing packages via pacman..."
-        sudo pacman -S --noconfirm $LINUX_PACKAGES
+        PKG_MGR="pacman"
     else
-        echo "Warning: Could not detect package manager. Please install manually:"
-        echo "  $LINUX_PACKAGES"
+        PKG_MGR=""
+    fi
+
+    if [[ -z "$PKG_MGR" ]]; then
+        echo "Warning: Could not detect package manager. Please install manually."
+    else
+        echo "Installing packages via $PKG_MGR..."
+        [[ "$PKG_MGR" == "apt" ]] && sudo apt-get update
+
+        for entry in $LINUX_PACKAGES; do
+            pkg="${entry%%:*}"
+            bin="${entry##*:}"
+            if command -v "$bin" &>/dev/null; then
+                echo "  $pkg: already installed ($bin found)"
+            else
+                echo "  $pkg: installing..."
+                case "$PKG_MGR" in
+                    apt)    sudo apt-get install -y "$pkg" ;;
+                    dnf)    sudo dnf install -y "$pkg" ;;
+                    yum)    sudo yum install -y "$pkg" ;;
+                    pacman) sudo pacman -S --noconfirm "$pkg" ;;
+                esac
+            fi
+        done
     fi
     echo
 else
