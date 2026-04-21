@@ -5,8 +5,8 @@ set -e
 echo "=== Installing Dependencies ==="
 echo
 
-# Core packages common across all OSes
-COMMON_PACKAGES="bash tmux git tig vim ctags maven mysql"
+# Core packages (Homebrew names — Linux names mapped below where they differ)
+COMMON_PACKAGES="bash tmux git tig vim maven"
 
 # Detect OS
 OS="$(uname)"
@@ -28,8 +28,7 @@ if [[ "$OS" == "Darwin" ]]; then
 
     echo "Installing packages via Homebrew..."
 
-    # macOS-specific packages (pyenv and goenv for version management)
-    MACOS_PACKAGES="$COMMON_PACKAGES pyenv goenv"
+    MACOS_PACKAGES="$COMMON_PACKAGES ctags mysql pyenv goenv"
 
     for pkg in $MACOS_PACKAGES; do
         if brew list "$pkg" &>/dev/null; then
@@ -52,23 +51,25 @@ if [[ "$OS" == "Darwin" ]]; then
     fi
 
 elif [[ "$OS" == "Linux" ]]; then
-    # Linux - detect package manager
+    # Package name mappings for Linux (ctags -> universal-ctags, mysql -> mysql-server)
+    LINUX_PACKAGES="$COMMON_PACKAGES universal-ctags mysql-server"
+
     if command -v apt-get &>/dev/null; then
         echo "Installing packages via apt..."
         sudo apt-get update
-        sudo apt-get install -y $COMMON_PACKAGES
+        sudo apt-get install -y $LINUX_PACKAGES
     elif command -v dnf &>/dev/null; then
         echo "Installing packages via dnf..."
-        sudo dnf install -y $COMMON_PACKAGES
+        sudo dnf install -y $LINUX_PACKAGES
     elif command -v yum &>/dev/null; then
         echo "Installing packages via yum..."
-        sudo yum install -y $COMMON_PACKAGES
+        sudo yum install -y $LINUX_PACKAGES
     elif command -v pacman &>/dev/null; then
         echo "Installing packages via pacman..."
-        sudo pacman -S --noconfirm $COMMON_PACKAGES
+        sudo pacman -S --noconfirm $LINUX_PACKAGES
     else
         echo "Warning: Could not detect package manager. Please install manually:"
-        echo "  $COMMON_PACKAGES"
+        echo "  $LINUX_PACKAGES"
     fi
     echo
 else
