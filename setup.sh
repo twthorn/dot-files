@@ -26,12 +26,16 @@ echo
 TPM_DIR="$HOME/.tmux/plugins/tpm"
 mkdir -p "$HOME/.tmux/resurrect"
 if [[ -x "$TPM_DIR/bin/install_plugins" ]]; then
-    # Reload tmux config first so the running server picks up TMUX_PLUGIN_MANAGER_PATH
+    # Reload tmux config so the running server picks up TMUX_PLUGIN_MANAGER_PATH
     if tmux list-sessions &>/dev/null; then
         tmux source-file ~/.tmux.conf 2>/dev/null
     fi
     echo "Installing tmux plugins..."
     "$TPM_DIR/bin/install_plugins"
+    # Reload again so tmux loads the newly installed plugins
+    if tmux list-sessions &>/dev/null; then
+        tmux source-file ~/.tmux.conf 2>/dev/null
+    fi
     echo
 fi
 
