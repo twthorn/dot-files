@@ -6,7 +6,7 @@ echo "=== Installing Dependencies ==="
 echo
 
 # Core packages (Homebrew names — Linux names mapped below where they differ)
-COMMON_PACKAGES="bash tmux git tig vim maven"
+COMMON_PACKAGES="bash tmux git gh tig vim maven"
 
 # Detect OS
 OS="$(uname)"
@@ -53,7 +53,7 @@ if [[ "$OS" == "Darwin" ]]; then
 elif [[ "$OS" == "Linux" ]]; then
     # Map package names to the binary they provide for "already installed" checks
     # Format: "package_name:binary_name"
-    LINUX_PACKAGES="bash:bash tmux:tmux git:git tig:tig vim:vim maven:mvn universal-ctags:ctags mysql-server:mysql"
+    LINUX_PACKAGES="bash:bash tmux:tmux git:git gh:gh tig:tig vim:vim maven:mvn universal-ctags:ctags mysql-server:mysql"
 
     # Detect package manager
     if command -v apt-get &>/dev/null; then
