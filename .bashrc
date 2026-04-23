@@ -4,6 +4,8 @@ source ~/.bash_prompt
 
 # Build PATH - use $HOME for portability across macOS/Linux
 export PATH="/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin"
+# Local binaries (Claude Code, pip --user, etc.)
+[[ -d "$HOME/.local/bin" ]] && export PATH="$HOME/.local/bin:$PATH"
 # Homebrew (macOS)
 [[ -d /opt/homebrew/bin ]] && export PATH="/opt/homebrew/bin:/opt/homebrew/sbin:$PATH"
 # Go
