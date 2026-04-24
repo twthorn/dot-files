@@ -5,7 +5,6 @@ if empty(glob('~/.vim/autoload/plug.vim'))
          autocmd VimEnter * PlugInstall --sync | source $MYVIMRC
          endif
 
-nmap <C-o> :action Back<CR>
 
 " install plugins
 call plug#begin('~/.vim/plugged')
