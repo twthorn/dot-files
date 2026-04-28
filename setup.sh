@@ -39,8 +39,8 @@ if [[ -x "$TPM_DIR/bin/install_plugins" ]]; then
     echo
 fi
 
-# Set up git ctags integration
-echo "Setting up ctags in git configs..."
+# Set up git config
+echo "Setting up git configs..."
 git config --global init.templatedir '~/.git_template'
 git config --global alias.ctags '!.git/hooks/ctags'
 echo
@@ -121,8 +121,28 @@ fi
 echo "Setup complete!"
 echo
 
-# Reload .bashrc in all running tmux bash panes
+# Reload .bashrc in all running tmux bash panes and fix session names
 if tmux list-sessions &>/dev/null; then
+    echo "Fixing tmux session names..."
+    tmux list-sessions -F '#{session_name}' | while read session; do
+        # Get the working directory of the first pane in the session
+        pane_path=$(tmux list-panes -t "$session" -F '#{pane_current_path}' | head -1)
+        # Expected name: path relative to $HOME
+        expected="${pane_path#$HOME/}"
+        if [[ "$expected" != "$session" ]] && [[ -n "$expected" ]] && [[ "$expected" != "$pane_path" ]]; then
+            # Avoid rename collisions by skipping if target name already exists
+            if ! tmux has-session -t "=$expected" 2>/dev/null; then
+                tmux rename-session -t "$session" "$expected"
+                echo "  renamed: $session -> $expected"
+            else
+                echo "  skipped: $session (session '$expected' already exists)"
+            fi
+        else
+            echo "  ok: $session"
+        fi
+    done
+    echo
+
     echo "Reloading .bashrc in all tmux bash panes..."
     tmux list-panes -a -F '#{session_name}:#{window_index}.#{pane_index} #{pane_current_command}' | while read pane cmd; do
         if [[ "$cmd" == "bash" ]] || [[ "$cmd" == "-bash" ]]; then
