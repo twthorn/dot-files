@@ -107,6 +107,11 @@ if [[ "$(uname)" == "Darwin" ]]; then
         echo
     fi
 
+    # Disable iTerm2 SSH shell integration (causes escape sequence leaks on remote hosts)
+    defaults write com.googlecode.iterm2 sshIntegrationLevel -int 0
+    echo "iTerm2 SSH shell integration disabled."
+    echo
+
     if [[ "$NEEDS_RESTART" == "true" ]]; then
         echo "=============================================="
         echo "  RESTART REQUIRED"
