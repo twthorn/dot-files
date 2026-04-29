@@ -1,9 +1,7 @@
 #!/bin/bash
-# source bash prompt
-source ~/.bash_prompt
 
 # Build PATH - use $HOME for portability across macOS/Linux
-export PATH="/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin"
+export PATH="/usr/local/bin:/usr/local/sbin:/usr/bin:/bin:/usr/sbin:/sbin"
 # Local binaries (Claude Code, pip --user, etc.)
 [[ -d "$HOME/.local/bin" ]] && export PATH="$HOME/.local/bin:$PATH"
 # Homebrew (macOS)
@@ -38,6 +36,9 @@ case $- in
     *i*) ;;
       *) return;;
 esac
+
+# source bash prompt
+source ~/.bash_prompt
 
 # Bash history settings
 # Keep sessions separate but persist all commands immediately
