@@ -28,7 +28,7 @@ if [[ "$OS" == "Darwin" ]]; then
 
     echo "Installing packages via Homebrew..."
 
-    MACOS_PACKAGES="$COMMON_PACKAGES ctags mysql pyenv goenv"
+    MACOS_PACKAGES="$COMMON_PACKAGES ctags mysql fswatch pyenv goenv"
 
     for pkg in $MACOS_PACKAGES; do
         if brew list "$pkg" &>/dev/null; then

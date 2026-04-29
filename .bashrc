@@ -150,6 +150,39 @@ alias gentagpy="ctags -L <(find . -name '*.py' | cut -c3-) --fields=+iaS --pytho
 # ssh
 alias fixssh='export $(tmux show-environment | grep \^SSH_AUTH_SOCK=)'
 
+# Continuous file sync to remote host
+# Usage: sync-to <host> [remote_dir]
+# Watches current directory and rsyncs changes on save from any app
+# remote_dir defaults to the same path relative to $HOME
+sync-to() {
+    local host="$1"
+    local dest="${2:-$(pwd | sed "s|$HOME/||")}"
+    dest="${dest#$HOME/}"
+    dest="${dest#\~/}"
+    if [[ -z "$host" ]]; then
+        echo "Usage: sync-to <host> [remote_dir]"
+        echo "  e.g.: sync-to myhost"
+        echo "  e.g.: sync-to myhost project/path"
+        return 1
+    fi
+
+    _sync_changed() {
+        local files
+        files=$(git diff --name-only 2>/dev/null; git diff --cached --name-only 2>/dev/null; git ls-files --others --exclude-standard 2>/dev/null)
+        files=$(echo "$files" | sort -u | grep -v '^$')
+        if [[ -n "$files" ]]; then
+            echo "$files" | rsync -avR --files-from=- . "$host:~/$dest/"
+        fi
+    }
+
+    echo "Syncing changed files in $(pwd) -> $host:~/$dest/"
+    echo "Watching for changes... (Ctrl-C to stop)"
+    _sync_changed
+    fswatch -o --exclude='\.git' . | while read; do
+        _sync_changed
+    done
+}
+
 # tmux
 alias t="tmux attach"
 alias tnew='tmux new-session -s "$(echo $PWD | sed "s|$HOME/||")"'
