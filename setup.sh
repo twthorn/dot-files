@@ -141,10 +141,23 @@ if tmux list-sessions &>/dev/null; then
     while IFS= read -r line; do
         sid="${line%% *}"
         session="${line#* }"
+
+        # Already correctly named (starts with ~/ or /)
+        if [[ "$session" == ~/* ]] || [[ "$session" == /* ]]; then
+            echo "  ok: $session"
+            continue
+        fi
+
+        # Try pane's current working directory first
         pane_path=$(tmux list-panes -t "$sid" -F '#{pane_current_path}' 2>/dev/null | head -1)
-        # ~/subdir for paths under $HOME, absolute path otherwise (including $HOME itself)
         expected=$(echo "$pane_path" | sed "s|^$HOME/|~/|")
-        if [[ -z "$expected" ]] || [[ "$expected" == "$session" ]]; then
+
+        # If pane is at $HOME, fall back to prepending ~/ to the session name
+        if [[ "$pane_path" == "$HOME" ]] || [[ -z "$pane_path" ]]; then
+            expected="~/$session"
+        fi
+
+        if [[ "$expected" == "$session" ]]; then
             echo "  ok: $session"
         elif tmux has-session -t "=$expected" 2>/dev/null; then
             echo "  skipped: $session (session '$expected' already exists)"
