@@ -143,7 +143,7 @@ if tmux list-sessions &>/dev/null; then
         session="${line#* }"
 
         # Already correctly named (starts with ~/ or /)
-        if [[ "$session" == ~/* ]] || [[ "$session" == /* ]]; then
+        if [[ "$session" == "~/"* ]] || [[ "$session" == /* ]]; then
             echo "  ok: $session"
             continue
         fi
