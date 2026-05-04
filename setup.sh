@@ -132,11 +132,16 @@ fi
 echo "Setup complete!"
 echo
 
+# Disable set -e for tmux operations (rename can fail for valid reasons)
+set +e
+
 # Reload .bashrc in all running tmux bash panes and fix session names
 if tmux list-sessions &>/dev/null; then
     echo "Fixing tmux session names..."
-    tmux list-sessions -F '#{session_name}' | while read session; do
-        pane_path=$(tmux list-panes -t "=$session" -F '#{pane_current_path}' | head -1)
+    while IFS= read -r line; do
+        sid="${line%% *}"
+        session="${line#* }"
+        pane_path=$(tmux list-panes -t "$sid" -F '#{pane_current_path}' 2>/dev/null | head -1)
         # ~/subdir for paths under $HOME, absolute path otherwise (including $HOME itself)
         expected=$(echo "$pane_path" | sed "s|^$HOME/|~/|")
         if [[ -z "$expected" ]] || [[ "$expected" == "$session" ]]; then
@@ -144,22 +149,28 @@ if tmux list-sessions &>/dev/null; then
         elif tmux has-session -t "=$expected" 2>/dev/null; then
             echo "  skipped: $session (session '$expected' already exists)"
         else
-            tmux rename-session -t "=$session" "$expected" && \
-                echo "  renamed: $session -> $expected" || \
+            if tmux rename-session -t "$sid" "$expected" 2>/dev/null; then
+                echo "  renamed: $session -> $expected"
+            else
                 echo "  failed: $session -> $expected"
+            fi
         fi
-    done
+    done < <(tmux list-sessions -F '#{session_id} #{session_name}')
     echo
 
     echo "Reloading .bashrc in all tmux bash panes..."
-    tmux list-panes -a -F '#{session_id}:#{window_index}.#{pane_index} #{pane_current_command}' | while read pane cmd; do
+    while IFS= read -r line; do
+        pane="${line%% *}"
+        cmd="${line#* }"
         if [[ "$cmd" == "bash" ]] || [[ "$cmd" == "-bash" ]]; then
-            tmux send-keys -t "$pane" "source ~/.bashrc" C-m
+            tmux send-keys -t "$pane" "source ~/.bashrc" C-m 2>/dev/null
             echo "  reloaded: $pane"
         fi
-    done
+    done < <(tmux list-panes -a -F '#{session_id}:#{window_index}.#{pane_index} #{pane_current_command}')
     echo
 fi
+
+set -e
 
 echo "Reloading .bashrc..."
 source "$HOME/.bashrc"
