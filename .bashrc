@@ -177,10 +177,16 @@ sync-to() {
 
     echo "Syncing changed files in $(pwd) -> $host:~/$dest/"
     echo "Watching for changes... (Ctrl-C to stop)"
+    echo "  Tip: run 'sync-push' in another pane to force re-sync"
     _sync_changed
     fswatch -o --exclude='\.git' . | while read; do
         _sync_changed
     done
+}
+
+# Force re-sync for a running sync-to (triggers fswatch)
+sync-push() {
+    touch .sync-trigger && rm -f .sync-trigger
 }
 
 # tmux

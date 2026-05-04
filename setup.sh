@@ -144,7 +144,17 @@ if tmux list-sessions &>/dev/null; then
 
         # Already correctly named (starts with ~/ or /)
         if [[ "$session" == "~/"* ]] || [[ "$session" == /* ]]; then
-            echo "  ok: $session"
+            # Fix double-tilde from previous bug
+            if [[ "$session" == "~/~/"* ]]; then
+                fixed="${session#"~/"}"
+                if tmux rename-session -t "$sid" "$fixed" 2>/dev/null; then
+                    echo "  fixed: $session -> $fixed"
+                else
+                    echo "  failed: $session -> $fixed"
+                fi
+            else
+                echo "  ok: $session"
+            fi
             continue
         fi
 
