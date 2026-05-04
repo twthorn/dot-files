@@ -22,6 +22,12 @@ do
 done
 echo
 
+# Copy helper scripts to ~/.local/bin
+if [[ ! -d "$HOME/.local/bin" ]]; then
+    mkdir -p "$HOME/.local/bin" 2>/dev/null || sudo mkdir -p "$HOME/.local/bin" && sudo chown -R "$USER" "$HOME/.local"
+fi
+cp "$SCRIPT_DIR/scripts/restore_tmux.sh" "$HOME/.local/bin/"
+
 # Install tmux plugins via TPM (must run after dot files are copied so ~/.tmux.conf is current)
 TPM_DIR="$HOME/.tmux/plugins/tpm"
 mkdir -p "$HOME/.tmux/resurrect"
@@ -131,17 +137,16 @@ if tmux list-sessions &>/dev/null; then
     echo "Fixing tmux session names..."
     tmux list-sessions -F '#{session_name}' | while read session; do
         pane_path=$(tmux list-panes -t "=$session" -F '#{pane_current_path}' | head -1)
-        expected="${pane_path#$HOME/}"
-        if [[ "$expected" != "$session" ]] && [[ -n "$expected" ]] && [[ "$expected" != "$pane_path" ]]; then
-            if ! tmux has-session -t "=$expected" 2>/dev/null; then
-                tmux rename-session -t "=$session" "$expected" && \
-                    echo "  renamed: $session -> $expected" || \
-                    echo "  failed: $session -> $expected"
-            else
-                echo "  skipped: $session (session '$expected' already exists)"
-            fi
-        else
+        # ~/subdir for paths under $HOME, absolute path otherwise (including $HOME itself)
+        expected=$(echo "$pane_path" | sed "s|^$HOME/|~/|")
+        if [[ -z "$expected" ]] || [[ "$expected" == "$session" ]]; then
             echo "  ok: $session"
+        elif tmux has-session -t "=$expected" 2>/dev/null; then
+            echo "  skipped: $session (session '$expected' already exists)"
+        else
+            tmux rename-session -t "=$session" "$expected" && \
+                echo "  renamed: $session -> $expected" || \
+                echo "  failed: $session -> $expected"
         fi
     done
     echo

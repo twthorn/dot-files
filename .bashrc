@@ -185,7 +185,8 @@ sync-to() {
 
 # tmux
 alias t="tmux attach"
-alias tnew='tmux new-session -s "$(echo $PWD | sed "s|$HOME/||")"'
+alias tnew='tmux new-session -s "$(pwd | sed "s|^$HOME/|~/|")"'
+alias trestore='bash ~/.local/bin/restore_tmux.sh'
 
 # python
 if command -v pyenv 1>/dev/null 2>&1; then

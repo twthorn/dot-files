@@ -47,6 +47,7 @@ These live in `scripts/` and are called by `setup.sh` — you shouldn't need to 
 | `scripts/install_dependencies.sh` | Installs packages via Homebrew/apt/dnf/yum/pacman + TPM |
 | `scripts/reload_all.sh` | Reloads `.bashrc` and `.tmux.conf` across all tmux sessions |
 | `scripts/migrate_cursor.sh` | Migrates Cursor IDE chat history when moving to a new Mac |
+| `scripts/restore_tmux.sh` | Smart tmux restore — picks best backup (alias: `trestore`) |
 
 ## Migrating to a New Mac
 
