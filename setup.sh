@@ -186,7 +186,7 @@ if tmux list-sessions &>/dev/null; then
         pane="${line%% *}"
         cmd="${line#* }"
         if [[ "$cmd" == "bash" ]] || [[ "$cmd" == "-bash" ]]; then
-            tmux send-keys -t "$pane" "source ~/.bashrc" C-m 2>/dev/null
+            tmux send-keys -t "$pane" "exec bash --norc --noprofile -c 'unset TMOUT; exec bash --rcfile ~/.bashrc'" C-m 2>/dev/null
             echo "  reloaded: $pane"
         fi
     done < <(tmux list-panes -a -F '#{session_id}:#{window_index}.#{pane_index} #{pane_current_command}')
