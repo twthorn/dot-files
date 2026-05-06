@@ -50,6 +50,21 @@ fi
 echo "Setting up git configs..."
 git config --global init.templatedir '~/.git_template'
 git config --global alias.ctags '!.git/hooks/ctags'
+# Remove any direct user.email (must come from includes for proper override ordering)
+git config --global --unset user.email 2>/dev/null || true
+# Source private config to get email vars
+[[ -f "$HOME/.bashrc_private" ]] && source "$HOME/.bashrc_private"
+if [[ -n "$GIT_EMAIL" ]]; then
+    printf '[user]\n\temail = %s\n' "$GIT_EMAIL" > "$HOME/.gitconfig-personal"
+fi
+if [[ -n "$WORK_EMAIL" ]]; then
+    printf '[user]\n\temail = %s\n' "$WORK_EMAIL" > "$HOME/.gitconfig-work"
+fi
+# Verify include/includeIf are set (ordering matters — include must come before includeIf)
+if ! git config --global --get include.path >/dev/null 2>&1; then
+    echo "  WARNING: ~/.gitconfig is missing [include] path = ~/.gitconfig-personal"
+    echo "  Add it BEFORE any [includeIf] sections."
+fi
 if [[ ! -f "$HOME/.bashrc_private" ]]; then
     echo "  NOTE: Copy .bashrc_private.example to ~/.bashrc_private and set your WORK_EMAIL and host aliases."
 fi
@@ -195,7 +210,7 @@ if tmux list-sessions &>/dev/null; then
         fi
         if [[ "$cmd" == "bash" ]] || [[ "$cmd" == "-bash" ]]; then
             tmux copy-mode -q -t "$pane" 2>/dev/null
-            tmux send-keys -t "$pane" "exec bash --norc --noprofile ~/.local/bin/tmux_shell.sh" C-m 2>/dev/null
+            tmux send-keys -t "$pane" " exec bash --norc --noprofile ~/.local/bin/tmux_shell.sh" C-m 2>/dev/null
             echo "  reloaded: $pane"
         fi
     done < <(tmux list-panes -a -F '#{session_id}:#{window_index}.#{pane_index} #{pane_current_command}')

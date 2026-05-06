@@ -34,13 +34,10 @@ export NVM_DIR="$HOME/.nvm"
 # Load private config (not tracked in git) and set up git emails
 [[ -f ~/.bashrc_private ]] && source ~/.bashrc_private
 if [[ -n "$GIT_EMAIL" ]]; then
-    git config --global user.email "$GIT_EMAIL" 2>/dev/null
+    printf '[user]\n\temail = %s\n' "$GIT_EMAIL" > ~/.gitconfig-personal
 fi
 if [[ -n "$WORK_EMAIL" ]]; then
     printf '[user]\n\temail = %s\n' "$WORK_EMAIL" > ~/.gitconfig-work
-    for dir in "${WORK_GIT_DIRS[@]}"; do
-        git config --global "includeIf.gitdir:${dir}.path" '~/.gitconfig-work' 2>/dev/null
-    done
 fi
 
 # If not running interactively, don't do anything
@@ -57,7 +54,7 @@ source ~/.bash_prompt
 shopt -s histappend               # Append history instead of overwriting
 HISTSIZE=10000                    # Commands to keep in memory per session
 HISTFILESIZE=50000                # Total commands to keep in file
-HISTCONTROL=ignoredups:erasedups  # Ignore duplicates
+HISTCONTROL=ignorespace:ignoredups:erasedups  # Ignore duplicates and space-prefixed commands
 HISTTIMEFORMAT='%F %T '           # Add timestamps to history
 
 # Save history after each command (but don't reload from other sessions)
