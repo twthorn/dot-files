@@ -50,6 +50,9 @@ fi
 echo "Setting up git configs..."
 git config --global init.templatedir '~/.git_template'
 git config --global alias.ctags '!.git/hooks/ctags'
+if [[ ! -f "$HOME/.bashrc_private" ]]; then
+    echo "  NOTE: Copy .bashrc_private.example to ~/.bashrc_private and set your WORK_EMAIL and host aliases."
+fi
 echo
 
 # Set default shell to bash

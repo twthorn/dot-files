@@ -1,5 +1,18 @@
 # Private bash configuration - copy to ~/.bashrc_private and customize
-# This file is sourced by .bashrc if it exists
+# This file is sourced by .bashrc if it exists.
+# It is the single source of truth for all machine/work-specific config.
+
+# Git emails
+GIT_EMAIL="YOUR_PERSONAL_EMAIL@example.com"
+WORK_EMAIL="YOUR_WORK_EMAIL@example.com"
+
+# Directories where work email should be used for git commits
+WORK_GIT_DIRS=(
+    "~/git/slack/"
+    "~/git/slackhq/"
+)
 
 # SSH aliases for remote hosts
-# alias myserver="ssh user@hostname.example.com"
+# REMOTE_SERVER="your-ops-host.example.com"
+# alias kube="ssh user@kube-host.example.com"
+# alias ops="ssh user@ops-host.example.com"

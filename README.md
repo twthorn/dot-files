@@ -8,17 +8,10 @@ Personal shell configuration for macOS and Linux.
 git clone git@github.com:twthorn/dot-files.git
 cd dot-files
 ./setup.sh
+cp .bashrc_private.example ~/.bashrc_private
+# Edit ~/.bashrc_private — set WORK_EMAIL and host aliases
+source ~/.bashrc
 ```
-
-That's it. `setup.sh` is the only command you need to run. It handles everything:
-
-- Installs dependencies (Homebrew packages, TPM, tmux plugins)
-- Copies dot files to `$HOME`
-- Configures git (ctags integration)
-- Sets default shell to bash
-- Configures keyboard repeat settings (macOS)
-- Installs iTerm2 dark profile (macOS)
-- Reloads `.bashrc` and `.tmux.conf` in all running tmux sessions
 
 Re-run `setup.sh` any time you pull changes — it's idempotent and will only apply what's needed.
 
@@ -31,12 +24,37 @@ Re-run `setup.sh` any time you pull changes — it's idempotent and will only ap
 | `.vimrc` | Vim config with plugins (vim-plug) |
 | `.tmux.conf` | Tmux config with session save/restore (resurrect + continuum) |
 | `.ideavimrc` | JetBrains IDE vim keybindings |
+| `.gitconfig` | Git config with `includeIf` for work email (`~/git/slack/`, `~/git/slackhq/`) |
 | `.gitignore_global` | Global git ignore patterns |
 | `.git_template/` | Git hooks for ctags |
 
 ## Private Config
 
-Machine-specific aliases (SSH hosts, etc.) go in `~/.bashrc_private` — this file is sourced by `.bashrc` if it exists but is not tracked in git. See `.bashrc_private.example` for the template.
+All machine-specific and work-specific config lives in one file: `~/.bashrc_private`. This file is sourced by `.bashrc` and is not tracked in git. See `.bashrc_private.example` for the template.
+
+It stores:
+- `GIT_EMAIL` — default (personal) git email for all repos
+- `WORK_EMAIL` — work git email, auto-generates `~/.gitconfig-work`
+- `WORK_GIT_DIRS` — array of directories where work email applies (sets up git `includeIf` entries)
+- `REMOTE_SERVER` — for the `git_interceptor` function
+- SSH host aliases, any other private config
+
+Repos under directories listed in `WORK_GIT_DIRS` automatically use your work email. All other directories use your default (personal) email. Nothing work-specific is committed to git.
+
+After running `setup.sh`:
+
+```bash
+cp .bashrc_private.example ~/.bashrc_private
+# Edit ~/.bashrc_private — set WORK_EMAIL and host aliases
+source ~/.bashrc
+```
+
+Verify it's working:
+
+```bash
+cd ~/git/slack/any-repo
+git config user.email   # should show your work email
+```
 
 ## Helper Scripts
 
@@ -46,6 +64,7 @@ These live in `scripts/` and are called by `setup.sh` — you shouldn't need to 
 |---|---|
 | `scripts/install_dependencies.sh` | Installs packages via Homebrew/apt/dnf/yum/pacman + TPM |
 | `scripts/reload_all.sh` | Reloads `.bashrc` and `.tmux.conf` across all tmux sessions |
+| `scripts/tmux_shell.sh` | Tmux shell wrapper that bypasses readonly TMOUT idle timeout |
 | `scripts/migrate_cursor.sh` | Migrates Cursor IDE chat history when moving to a new Mac |
 | `scripts/restore_tmux.sh` | Smart tmux restore — picks best backup (alias: `trestore`) |
 
@@ -69,6 +88,7 @@ Cursor settings, keybindings, extensions, and chat history are all stored in one
 git clone git@github.com:twthorn/dot-files.git
 cd dot-files
 ./setup.sh
+cp .bashrc_private.example ~/.bashrc_private
+# Edit ~/.bashrc_private — set WORK_EMAIL and host aliases
+source ~/.bashrc
 ```
-
-Then add any private config (SSH aliases, etc.) to `~/.bashrc_private`.

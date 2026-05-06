@@ -31,6 +31,18 @@ export NVM_DIR="$HOME/.nvm"
 [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
 [ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"  # This loads nvm bash_completion
 
+# Load private config (not tracked in git) and set up git emails
+[[ -f ~/.bashrc_private ]] && source ~/.bashrc_private
+if [[ -n "$GIT_EMAIL" ]]; then
+    git config --global user.email "$GIT_EMAIL" 2>/dev/null
+fi
+if [[ -n "$WORK_EMAIL" ]]; then
+    printf '[user]\n\temail = %s\n' "$WORK_EMAIL" > ~/.gitconfig-work
+    for dir in "${WORK_GIT_DIRS[@]}"; do
+        git config --global "includeIf.gitdir:${dir}.path" '~/.gitconfig-work' 2>/dev/null
+    done
+fi
+
 # If not running interactively, don't do anything
 case $- in
     *i*) ;;
@@ -200,6 +212,3 @@ if command -v pyenv 1>/dev/null 2>&1; then
 fi
 
 complete -W "\`grep -oE '^[a-zA-Z0-9_.-]+:([^=]|$)' Makefile | sed 's/[^a-zA-Z0-9_.-]*$//'\`" make
-
-# Load private aliases/config if present (not tracked in git)
-[[ -f ~/.bashrc_private ]] && source ~/.bashrc_private
