@@ -27,6 +27,7 @@ if [[ ! -d "$HOME/.local/bin" ]]; then
     mkdir -p "$HOME/.local/bin" 2>/dev/null || sudo mkdir -p "$HOME/.local/bin" && sudo chown -R "$USER" "$HOME/.local"
 fi
 cp "$SCRIPT_DIR/scripts/restore_tmux.sh" "$HOME/.local/bin/"
+cp "$SCRIPT_DIR/scripts/tmux_shell.sh" "$HOME/.local/bin/"
 
 # Install tmux plugins via TPM (must run after dot files are copied so ~/.tmux.conf is current)
 TPM_DIR="$HOME/.tmux/plugins/tpm"
@@ -182,11 +183,16 @@ if tmux list-sessions &>/dev/null; then
     echo
 
     echo "Reloading .bashrc in all tmux bash panes..."
+    current_pane=$(tmux display-message -p '#{session_id}:#{window_index}.#{pane_index}' 2>/dev/null)
     while IFS= read -r line; do
         pane="${line%% *}"
         cmd="${line#* }"
+        if [[ "$pane" == "$current_pane" ]]; then
+            continue
+        fi
         if [[ "$cmd" == "bash" ]] || [[ "$cmd" == "-bash" ]]; then
-            tmux send-keys -t "$pane" "exec bash --norc --noprofile -c 'unset TMOUT; exec bash --rcfile ~/.bashrc'" C-m 2>/dev/null
+            tmux copy-mode -q -t "$pane" 2>/dev/null
+            tmux send-keys -t "$pane" "exec bash --norc --noprofile ~/.local/bin/tmux_shell.sh" C-m 2>/dev/null
             echo "  reloaded: $pane"
         fi
     done < <(tmux list-panes -a -F '#{session_id}:#{window_index}.#{pane_index} #{pane_current_command}')
