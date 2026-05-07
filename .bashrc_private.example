@@ -8,8 +8,8 @@ WORK_EMAIL="YOUR_WORK_EMAIL@example.com"
 
 # Directories where work email should be used for git commits
 WORK_GIT_DIRS=(
-    "~/git/slack/"
-    "~/git/slackhq/"
+    "~/git/work-org/"
+    "~/git/work-org-2/"
 )
 
 # SSH aliases for remote hosts

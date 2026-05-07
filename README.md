@@ -24,7 +24,7 @@ Re-run `setup.sh` any time you pull changes — it's idempotent and will only ap
 | `.vimrc` | Vim config with plugins (vim-plug) |
 | `.tmux.conf` | Tmux config with session save/restore (resurrect + continuum) |
 | `.ideavimrc` | JetBrains IDE vim keybindings |
-| `.gitconfig` | Git config with `includeIf` for work email (`~/git/slack/`, `~/git/slackhq/`) |
+| `.gitconfig` | Git config with `include`/`includeIf` for email routing |
 | `.gitignore_global` | Global git ignore patterns |
 | `.git_template/` | Git hooks for ctags |
 
@@ -52,7 +52,7 @@ source ~/.bashrc
 Verify it's working:
 
 ```bash
-cd ~/git/slack/any-repo
+cd ~/git/your-work-org/any-repo
 git config user.email   # should show your work email
 ```
 
@@ -65,6 +65,7 @@ These live in `scripts/` and are called by `setup.sh` — you shouldn't need to 
 | `scripts/install_dependencies.sh` | Installs packages via Homebrew/apt/dnf/yum/pacman + TPM |
 | `scripts/reload_all.sh` | Reloads `.bashrc` and `.tmux.conf` across all tmux sessions |
 | `scripts/tmux_shell.sh` | Tmux shell wrapper that bypasses readonly TMOUT idle timeout |
+| `scripts/migrate_host.sh` | Migrates home directory to a new remote dev host |
 | `scripts/migrate_cursor.sh` | Migrates Cursor IDE chat history when moving to a new Mac |
 | `scripts/restore_tmux.sh` | Smart tmux restore — picks best backup (alias: `trestore`) |
 
@@ -92,3 +93,59 @@ cp .bashrc_private.example ~/.bashrc_private
 # Edit ~/.bashrc_private — set WORK_EMAIL and host aliases
 source ~/.bashrc
 ```
+
+## Migrating to a New Remote Dev Host
+
+When you get a new dev box (or move from one to another), this gets you back to a working state with all repos, tmux sessions, and config intact.
+
+### 1. Copy data and run setup
+
+```bash
+scripts/migrate_host.sh new-host-name
+```
+
+This handles everything: rsyncs your entire home directory to the new host, pulls the latest dot-files, and runs setup.sh. It shows rsync progress in real-time.
+
+To migrate between two remote hosts (e.g., old kube box to new one):
+
+```bash
+scripts/migrate_host.sh new-host old-host
+```
+
+### 2. Restore tmux sessions
+
+The tmux resurrect plugin saves session state to `~/.tmux/resurrect/`. If you rsync'd that directory, your sessions are recoverable:
+
+```bash
+# Start tmux
+tmux
+
+# Check which backup will be used
+trestore --dry-run
+
+# Point resurrect at the best backup
+trestore
+
+# Then restore inside tmux: prefix (Ctrl-Space), then Ctrl-r
+```
+
+This restores all session names, window layouts, pane directories, and running commands.
+
+### 3. Verify
+
+```bash
+# Git email is correct for work repos
+cd ~/git/work-org/any-repo && git config user.email
+
+# TMOUT is not set (sessions won't be killed)
+echo $TMOUT    # should be empty
+
+# Tmux sessions are restored
+tmux ls
+```
+
+### Tips
+
+- Update `~/.bashrc_private` on the new host if the alias for the old host needs to change
+- If git repos need re-authentication, ensure your credential helper or SSH keys are set up
+- The `sync-to` function in `.bashrc` can keep your local and remote repos in sync going forward
