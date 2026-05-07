@@ -2,6 +2,15 @@
 
 Personal shell configuration for macOS and Linux.
 
+![prompt](images/prompt.png)
+
+```
+user at hostname in ~/current/directory on branch [$]
+$
+```
+
+Color-coded prompt showing user, host, working directory, git branch, and repo status (`$` = stash, `!` = unstaged, `+` = staged, `?` = untracked).
+
 ## Quick Start
 
 ```bash
