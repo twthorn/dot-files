@@ -15,7 +15,7 @@ echo
 
 # Copy dot files to home directory
 echo "Copying dot files to $HOME..."
-for f in $(ls -A | egrep '^\.' | grep -v .gitconfig | grep -v ".git$" | grep -v .gitignore)
+for f in $(ls -A | egrep '^\.' | grep -v .gitconfig | grep -v ".git$" | grep -v .gitignore | grep -v .claude)
 do
     echo "  cp -r $f $HOME"
     cp -r "$f" "$HOME"
@@ -28,6 +28,22 @@ if [[ ! -d "$HOME/.local/bin" ]]; then
 fi
 cp "$SCRIPT_DIR/scripts/restore_tmux.sh" "$HOME/.local/bin/"
 cp "$SCRIPT_DIR/scripts/tmux_shell.sh" "$HOME/.local/bin/"
+
+# Append dot-files CLAUDE.md section (idempotent — replaces previous dot-files block)
+mkdir -p "$HOME/.claude"
+if [[ -f "$SCRIPT_DIR/.claude/CLAUDE.md" ]]; then
+    REVIEWERS="${GITHUB_REVIEWERS:-}"
+    BLOCK=$(sed "s/%%REVIEWERS%%/$REVIEWERS/" "$SCRIPT_DIR/.claude/CLAUDE.md")
+    TARGET="$HOME/.claude/CLAUDE.md"
+    MARKER="# --- dot-files managed ---"
+    if [[ -f "$TARGET" ]] && grep -qF "$MARKER" "$TARGET"; then
+        # Replace existing block
+        sed -i.bak "/$MARKER/,\$d" "$TARGET" && rm -f "$TARGET.bak"
+    fi
+    [[ -f "$TARGET" ]] || touch "$TARGET"
+    printf '\n%s\n%s\n' "$MARKER" "$BLOCK" >> "$TARGET"
+    echo "  Updated ~/.claude/CLAUDE.md"
+fi
 
 # Install tmux plugins via TPM (must run after dot files are copied so ~/.tmux.conf is current)
 TPM_DIR="$HOME/.tmux/plugins/tpm"
@@ -50,8 +66,8 @@ fi
 echo "Setting up git configs..."
 git config --global init.templatedir '~/.git_template'
 git config --global alias.ctags '!.git/hooks/ctags'
-# Remove any direct user.email (must come from includes for proper override ordering)
-git config --global --unset user.email 2>/dev/null || true
+git config --global credential.helper store
+git config --global core.editor vim
 # Source private config to get email vars
 [[ -f "$HOME/.bashrc_private" ]] && source "$HOME/.bashrc_private"
 if [[ -n "$GIT_EMAIL" ]]; then
@@ -59,11 +75,6 @@ if [[ -n "$GIT_EMAIL" ]]; then
 fi
 if [[ -n "$WORK_EMAIL" ]]; then
     printf '[user]\n\temail = %s\n' "$WORK_EMAIL" > "$HOME/.gitconfig-work"
-fi
-# Verify include/includeIf are set (ordering matters — include must come before includeIf)
-if ! git config --global --get include.path >/dev/null 2>&1; then
-    echo "  WARNING: ~/.gitconfig is missing [include] path = ~/.gitconfig-personal"
-    echo "  Add it BEFORE any [includeIf] sections."
 fi
 if [[ ! -f "$HOME/.bashrc_private" ]]; then
     echo "  NOTE: Copy .bashrc_private.example to ~/.bashrc_private and set your WORK_EMAIL and host aliases."

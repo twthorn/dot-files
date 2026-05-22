@@ -2,3 +2,7 @@
 	templatedir = ~/.git_template
 [alias]
 	ctags = !.git/hooks/ctags
+[credential]
+	helper = store
+[core]
+	editor = vim

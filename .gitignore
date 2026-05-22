@@ -2,5 +2,8 @@
 .bashrc_private
 .gitconfig-work
 
+# Vim swap files
+*.swp
+
 # macOS
 .DS_Store

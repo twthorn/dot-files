@@ -16,3 +16,6 @@ WORK_GIT_DIRS=(
 # REMOTE_SERVER="your-ops-host.example.com"
 # alias kube="ssh user@kube-host.example.com"
 # alias ops="ssh user@ops-host.example.com"
+
+# Claude Code - PR reviewers (space-separated GitHub usernames)
+GITHUB_REVIEWERS="reviewer1 reviewer2 reviewer3"
