@@ -61,6 +61,14 @@ HISTTIMEFORMAT='%F %T '           # Add timestamps to history
 # This keeps sessions independent while ensuring all history is persisted
 PROMPT_COMMAND="history -a; $PROMPT_COMMAND"
 
+# Auto-fix stale SSH agent in tmux panes
+_fixssh() {
+    if [[ -n "$TMUX" ]] && [[ ! -S "$SSH_AUTH_SOCK" ]]; then
+        eval "$(tmux show-environment -s SSH_AUTH_SOCK 2>/dev/null)" 2>/dev/null
+    fi
+}
+PROMPT_COMMAND="_fixssh; $PROMPT_COMMAND"
+
 # prevent accidental shell exits
 export IGNOREEOF=42
 
