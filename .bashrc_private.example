@@ -19,3 +19,9 @@ WORK_GIT_DIRS=(
 
 # Claude Code - PR reviewers (space-separated GitHub usernames)
 GITHUB_REVIEWERS="reviewer1 reviewer2 reviewer3"
+
+# Remote hosts to sync dotfiles/private config to (used by scripts/sync_private.sh)
+REMOTE_HOSTS=(
+    "your-host-1"
+    "your-host-2"
+)
