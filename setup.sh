@@ -29,8 +29,24 @@ fi
 cp "$SCRIPT_DIR/scripts/restore_tmux.sh" "$HOME/.local/bin/"
 cp "$SCRIPT_DIR/scripts/tmux_shell.sh" "$HOME/.local/bin/"
 
-# Append dot-files CLAUDE.md section (idempotent — replaces previous dot-files block)
+# Ensure Claude Code can read/edit/write ~/git/
 mkdir -p "$HOME/.claude"
+if command -v jq >/dev/null 2>&1; then
+    TARGET="$HOME/.claude/settings.json"
+    NEEDED=("Read(~/git/**)" "Edit(~/git/**)" "Write(~/git/**)")
+    if [[ ! -f "$TARGET" ]]; then
+        echo '{"permissions":{"allow":[]}}' > "$TARGET"
+    fi
+    for perm in "${NEEDED[@]}"; do
+        if ! jq -e ".permissions.allow // [] | index(\"$perm\")" "$TARGET" >/dev/null 2>&1; then
+            UPDATED=$(jq ".permissions.allow = ((.permissions.allow // []) + [\"$perm\"] | unique)" "$TARGET")
+            echo "$UPDATED" > "$TARGET"
+        fi
+    done
+    echo "  Ensured ~/git/ permissions in Claude settings"
+fi
+
+# Append dot-files CLAUDE.md section (idempotent — replaces previous dot-files block)
 if [[ -f "$SCRIPT_DIR/.claude/CLAUDE.md" ]]; then
     REVIEWERS="${GITHUB_REVIEWERS:-}"
     BLOCK=$(sed "s/%%REVIEWERS%%/$REVIEWERS/" "$SCRIPT_DIR/.claude/CLAUDE.md")
@@ -44,6 +60,7 @@ if [[ -f "$SCRIPT_DIR/.claude/CLAUDE.md" ]]; then
     printf '\n%s\n%s\n' "$MARKER" "$BLOCK" >> "$TARGET"
     echo "  Updated ~/.claude/CLAUDE.md"
 fi
+
 
 # Install tmux plugins via TPM (must run after dot files are copied so ~/.tmux.conf is current)
 TPM_DIR="$HOME/.tmux/plugins/tpm"
