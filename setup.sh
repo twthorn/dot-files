@@ -8,6 +8,9 @@ cd "$SCRIPT_DIR"
 echo "=== Dot Files Setup ==="
 echo
 
+# Source private config early so vars are available throughout
+[[ -f "$HOME/.bashrc_private" ]] && source "$HOME/.bashrc_private"
+
 # Install dependencies first
 echo "Installing dependencies..."
 "$SCRIPT_DIR/scripts/install_dependencies.sh"
@@ -85,8 +88,6 @@ git config --global init.templatedir '~/.git_template'
 git config --global alias.ctags '!.git/hooks/ctags'
 git config --global credential.helper store
 git config --global core.editor vim
-# Source private config to get email vars
-[[ -f "$HOME/.bashrc_private" ]] && source "$HOME/.bashrc_private"
 if [[ -n "$GIT_EMAIL" ]]; then
     printf '[user]\n\temail = %s\n' "$GIT_EMAIL" > "$HOME/.gitconfig-personal"
 fi

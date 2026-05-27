@@ -8,3 +8,6 @@
 
 # PR Reviewers
 - Default reviewers: %%REVIEWERS%%
+
+# SSH Fix
+When git push fails with SSH permission denied, run: `export $(tmux show-environment | grep ^SSH_AUTH_SOCK=)` before retrying.
