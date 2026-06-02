@@ -72,7 +72,7 @@ elif [[ "$OS" == "Linux" ]]; then
         echo "Warning: Could not detect package manager. Please install manually."
     else
         echo "Installing packages via $PKG_MGR..."
-        [[ "$PKG_MGR" == "apt" ]] && sudo apt-get update
+        [[ "$PKG_MGR" == "apt" ]] && sudo apt-get update -qq 2>/dev/null || true
 
         for entry in $LINUX_PACKAGES; do
             pkg="${entry%%:*}"
