@@ -28,7 +28,7 @@ _run_local() {
 
     echo ""
     echo "========================================"
-    echo "  HOST: $(hostname) (local)"
+    echo "  HOST: $(hostname)"
     echo "========================================"
     echo ""
 
@@ -280,28 +280,23 @@ _run_remote() {
         scp "$HOME/.bashrc_private" "$host:~/.bashrc_private"
         echo "  Pulling and running setup --local-only..."
         if ssh "$host" "cd ~/$REPO_DIR && git pull && ./setup.sh --local-only"; then
-            echo ""
-            echo "  ✓ $host done"
+            RESULTS+=("  ✓ $host")
         else
-            echo ""
-            echo "  ✗ $host had errors (continuing)"
-            FAILED+=("$host")
+            RESULTS+=("  ✗ $host (errors)")
         fi
     done
-
-    echo ""
-    if [[ ${#FAILED[@]} -eq 0 ]]; then
-        echo "  All remote hosts updated successfully."
-    else
-        echo "  Done with errors on: ${FAILED[*]}"
-    fi
 }
 
 # --- Main ---
 echo "=== Dot Files Setup ==="
+RESULTS=()
 
 if [[ "$RUN_LOCAL" == "true" ]]; then
-    _run_local
+    if _run_local; then
+        RESULTS+=("  ✓ $(hostname) (local)")
+    else
+        RESULTS+=("  ✗ $(hostname) (local, errors)")
+    fi
 fi
 
 if [[ "$RUN_REMOTE" == "true" ]]; then
@@ -310,5 +305,8 @@ fi
 
 echo ""
 echo "========================================"
-echo "  All done."
+echo "  Summary:"
+for r in "${RESULTS[@]}"; do
+    echo "$r"
+done
 echo "========================================"
