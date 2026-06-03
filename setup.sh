@@ -14,6 +14,15 @@ case "${1:-}" in
     --remote-only) RUN_LOCAL=false ;;
 esac
 
+# Abort if running with remotes and there are uncommitted changes
+if [[ "$RUN_REMOTE" == "true" ]] && [[ -d "$SCRIPT_DIR/.git" ]]; then
+    if ! git -C "$SCRIPT_DIR" diff --quiet || ! git -C "$SCRIPT_DIR" diff --cached --quiet; then
+        echo "ERROR: Uncommitted changes in dot-files repo."
+        echo "Remote hosts will pull stale code. Commit and push first, or use --local-only."
+        exit 1
+    fi
+fi
+
 # --- Local setup ---
 _run_local() {
 
@@ -44,21 +53,17 @@ _run_local() {
     cp "$SCRIPT_DIR/scripts/restore_tmux.sh" "$HOME/.local/bin/"
     cp "$SCRIPT_DIR/scripts/tmux_shell.sh" "$HOME/.local/bin/"
 
-    # Ensure Claude Code can read/edit/write ~/git/
+    # Ensure Claude Code permissions (allow everything, deny only external-impact commands)
     mkdir -p "$HOME/.claude"
     if command -v jq >/dev/null 2>&1; then
         TARGET="$HOME/.claude/settings.json"
-        NEEDED=("Read(~/git/**)" "Edit(~/git/**)" "Write(~/git/**)")
-        if [[ ! -f "$TARGET" ]]; then
-            echo '{"permissions":{"allow":[]}}' > "$TARGET"
-        fi
-        for perm in "${NEEDED[@]}"; do
-            if ! jq -e ".permissions.allow // [] | index(\"$perm\")" "$TARGET" >/dev/null 2>&1; then
-                UPDATED=$(jq ".permissions.allow = ((.permissions.allow // []) + [\"$perm\"] | unique)" "$TARGET")
-                echo "$UPDATED" > "$TARGET"
-            fi
-        done
-        echo "  Ensured ~/git/ permissions in Claude settings"
+        [[ ! -f "$TARGET" ]] && echo '{}' > "$TARGET"
+        UPDATED=$(jq '.permissions = {
+            "allow": ["Bash(*)", "Read(*)", "Edit(*)", "Write(*)", "WebFetch(*)"],
+            "deny": ["Bash(git push *)", "Bash(git push --force *)", "Bash(gh pr create *)", "Bash(gh pr merge *)", "Bash(rm -rf *)", "Bash(docker rm *)", "Bash(docker rmi *)", "Bash(kubectl delete *)", "Bash(terraform apply *)", "Bash(terraform destroy *)"]
+        }' "$TARGET")
+        echo "$UPDATED" > "$TARGET"
+        echo "  Updated Claude Code permissions"
     fi
 
     # Append dot-files CLAUDE.md section (idempotent — replaces previous dot-files block)
