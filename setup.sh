@@ -60,7 +60,7 @@ _run_local() {
         [[ ! -f "$TARGET" ]] && echo '{}' > "$TARGET"
         UPDATED=$(jq '.permissions = {
             "allow": ["Bash(*)", "Read(*)", "Edit(*)", "Write(*)", "WebFetch(*)"],
-            "deny": ["Bash(git push *)", "Bash(git push --force *)", "Bash(gh pr create *)", "Bash(gh pr merge *)", "Bash(rm -rf *)", "Bash(docker rm *)", "Bash(docker rmi *)", "Bash(kubectl delete *)", "Bash(terraform apply *)", "Bash(terraform destroy *)"]
+            "deny": ["Bash(rm -rf *)", "Bash(docker rm *)", "Bash(docker rmi *)", "Bash(kubectl delete *)", "Bash(terraform apply *)", "Bash(terraform destroy *)"]
         }' "$TARGET")
         echo "$UPDATED" > "$TARGET"
         echo "  Updated Claude Code permissions"
