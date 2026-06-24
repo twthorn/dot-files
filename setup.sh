@@ -59,11 +59,18 @@ _run_local() {
         TARGET="$HOME/.claude/settings.json"
         [[ ! -f "$TARGET" ]] && echo '{}' > "$TARGET"
         UPDATED=$(jq '.permissions = {
-            "allow": ["Bash(*)", "Read(*)", "Edit(*)", "Write(*)", "WebFetch(*)"],
+            "allow": ["Bash(*)", "Read(*)", "Edit(*)", "Write(*)", "WebFetch(*)", "mcp__*(*)"],
             "deny": ["Bash(rm -rf *)", "Bash(docker rm *)", "Bash(docker rmi *)", "Bash(kubectl delete *)", "Bash(terraform apply *)", "Bash(terraform destroy *)"]
         }' "$TARGET")
         echo "$UPDATED" > "$TARGET"
         echo "  Updated Claude Code permissions"
+
+        # Merge MCP servers from ~/.mcp_private.json into global Claude settings
+        if [[ -f "$HOME/.mcp_private.json" ]]; then
+            UPDATED=$(jq -s '.[0] * {mcpServers: .[1].mcpServers}' "$TARGET" "$HOME/.mcp_private.json")
+            echo "$UPDATED" > "$TARGET"
+            echo "  Merged MCP servers from ~/.mcp_private.json"
+        fi
     fi
 
     # Append dot-files CLAUDE.md section (idempotent — replaces previous dot-files block)
@@ -276,8 +283,9 @@ _run_remote() {
         echo "  HOST: $host (remote)"
         echo "========================================"
         echo ""
-        echo "  Syncing ~/.bashrc_private..."
+        echo "  Syncing private configs..."
         scp "$HOME/.bashrc_private" "$host:~/.bashrc_private"
+        [[ -f "$HOME/.mcp_private.json" ]] && scp "$HOME/.mcp_private.json" "$host:~/.mcp_private.json"
         echo "  Pulling and running setup --local-only..."
         if ssh "$host" "cd ~/$REPO_DIR && git pull && ./setup.sh --local-only"; then
             RESULTS+=("  ✓ $host")

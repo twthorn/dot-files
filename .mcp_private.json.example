@@ -1,0 +1,20 @@
+{
+  "mcpServers": {
+    "example-http-server": {
+      "type": "http",
+      "url": "https://example.com/mcp"
+    },
+    "example-oauth-server": {
+      "type": "http",
+      "url": "https://auth.example.com/mcp",
+      "oauth": {
+        "clientId": "YOUR_CLIENT_ID",
+        "callbackPort": 3118
+      }
+    },
+    "example-local-server": {
+      "command": "npx",
+      "args": ["@example/mcp-server"]
+    }
+  }
+}
