@@ -59,7 +59,7 @@ _run_local() {
         TARGET="$HOME/.claude/settings.json"
         [[ ! -f "$TARGET" ]] && echo '{}' > "$TARGET"
         UPDATED=$(jq '.permissions = {
-            "allow": ["Bash(*)", "Read(*)", "Edit(*)", "Write(*)", "WebFetch(*)", "mcp__*(*)"],
+            "allow": ["Bash(*)", "Read(*)", "Edit(*)", "Write(*)", "WebFetch(*)", "mcp__*__*"],
             "deny": ["Bash(rm -rf *)", "Bash(docker rm *)", "Bash(docker rmi *)", "Bash(kubectl delete *)", "Bash(terraform apply *)", "Bash(terraform destroy *)"]
         }' "$TARGET")
         echo "$UPDATED" > "$TARGET"
