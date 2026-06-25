@@ -58,8 +58,15 @@ _run_local() {
     if command -v jq >/dev/null 2>&1; then
         TARGET="$HOME/.claude/settings.json"
         [[ ! -f "$TARGET" ]] && echo '{}' > "$TARGET"
-        UPDATED=$(jq '.permissions = {
-            "allow": ["Bash(*)", "Read(*)", "Edit(*)", "Write(*)", "WebFetch(*)", "mcp__*__*"],
+
+        # Build MCP allow rules from ~/.mcp_private.json (e.g. "mcp__slack__*")
+        MCP_ALLOWS="[]"
+        if [[ -f "$HOME/.mcp_private.json" ]]; then
+            MCP_ALLOWS=$(jq '[.mcpServers | keys[] | "mcp__" + . + "__*"]' "$HOME/.mcp_private.json")
+        fi
+
+        UPDATED=$(jq --argjson mcp_allows "$MCP_ALLOWS" '.permissions = {
+            "allow": (["Bash(*)", "Read(*)", "Edit(*)", "Write(*)", "WebFetch(*)"] + $mcp_allows),
             "deny": ["Bash(rm -rf *)", "Bash(docker rm *)", "Bash(docker rmi *)", "Bash(kubectl delete *)", "Bash(terraform apply *)", "Bash(terraform destroy *)"]
         }' "$TARGET")
         echo "$UPDATED" > "$TARGET"
