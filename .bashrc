@@ -50,15 +50,14 @@ esac
 source ~/.bash_prompt
 
 # Bash history settings
-# Keep sessions separate but persist all commands immediately
 shopt -s histappend               # Append history instead of overwriting
 HISTSIZE=10000                    # Commands to keep in memory per session
 HISTFILESIZE=50000                # Total commands to keep in file
-HISTCONTROL=ignorespace:ignoredups:erasedups  # Ignore duplicates and space-prefixed commands
-HISTTIMEFORMAT='%F %T '           # Add timestamps to history
+HISTCONTROL=ignorespace:ignoredups
+HISTTIMEFORMAT='%F %T '
 
-# Save history after each command (but don't reload from other sessions)
-# This keeps sessions independent while ensuring all history is persisted
+# Persist each command to file immediately (so nothing lost if shell dies)
+# Each shell keeps its own in-memory list; new shells start with full global history
 PROMPT_COMMAND="history -a; $PROMPT_COMMAND"
 
 # Auto-fix stale SSH agent in tmux panes
