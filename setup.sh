@@ -67,7 +67,7 @@ _run_local() {
 
         UPDATED=$(jq --argjson mcp_allows "$MCP_ALLOWS" '.permissions = {
             "allow": (["Bash(*)", "Read(*)", "Edit(*)", "Write(*)", "WebFetch(*)"] + $mcp_allows),
-            "deny": ["Bash(rm -rf *)", "Bash(docker rm *)", "Bash(docker rmi *)", "Bash(kubectl delete *)", "Bash(terraform apply *)", "Bash(terraform destroy *)"]
+            "deny": ["Bash(rm -rf *)", "Bash(docker rm *)", "Bash(docker rmi *)", "Bash(kubectl delete *)", "Bash(kubectl apply *)", "Bash(kubectl scale *)", "Bash(kubectl rollout *)", "Bash(kubectl exec *)", "Bash(kubectl cordon *)", "Bash(kubectl drain *)", "Bash(knife *)", "Bash(gnife *)", "Bash(helm install *)", "Bash(helm upgrade *)", "Bash(helm uninstall *)", "Bash(terraform apply *)", "Bash(terraform destroy *)"]
         }' "$TARGET")
         echo "$UPDATED" > "$TARGET"
         echo "  Updated Claude Code permissions"
