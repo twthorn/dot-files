@@ -80,6 +80,21 @@ _run_local() {
         fi
     fi
 
+    # Deploy VS Code / Cursor settings
+    if [[ -f "$SCRIPT_DIR/vscode_settings.json" ]]; then
+        for EDITOR_DIR in \
+            "$HOME/Library/Application Support/Code/User" \
+            "$HOME/Library/Application Support/Cursor/User" \
+            "$HOME/.config/Code/User" \
+            "$HOME/.config/Cursor/User"; do
+            if [[ -d "$(dirname "$EDITOR_DIR")" ]]; then
+                mkdir -p "$EDITOR_DIR"
+                cp "$SCRIPT_DIR/vscode_settings.json" "$EDITOR_DIR/settings.json"
+                echo "  Copied editor settings to $EDITOR_DIR"
+            fi
+        done
+    fi
+
     # Append dot-files CLAUDE.md section (idempotent — replaces previous dot-files block)
     if [[ -f "$SCRIPT_DIR/.claude/CLAUDE.md" ]]; then
         REVIEWERS="${GITHUB_REVIEWERS:-}"

@@ -1,0 +1,26 @@
+{
+  "extensions.autoUpdate": false,
+  "extensions.autoCheckUpdates": false,
+  "files.autoSave": "afterDelay",
+  "files.insertFinalNewline": true,
+  "files.trimTrailingWhitespace": true,
+  "files.trimTrailingWhitespaceInRegexAndStrings": false,
+  "editor.trimAutoWhitespace": false,
+  "editor.codeActionsOnSave": {
+    "source.removeUnusedImports": "explicit"
+  },
+  "vim.insertModeKeyBindings": [
+    {
+      "before": ["j", "k"],
+      "after": ["<Esc>"]
+    }
+  ],
+  "accessibility.signals.sounds.volume": 0,
+  "accessibility.signalOptions.volume": 0,
+  "accessibility.signals.terminalBell": {
+    "sound": "off"
+  },
+  "audioCues.volume": 0,
+  "terminal.integrated.enableBell": false,
+  "terminal.integrated.enableVisualBell": false
+}
