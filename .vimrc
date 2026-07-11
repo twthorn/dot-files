@@ -8,6 +8,7 @@ if empty(glob('~/.vim/autoload/plug.vim'))
 
 " install plugins
 call plug#begin('~/.vim/plugged')
+Plug 'ntpeters/vim-better-whitespace'
 Plug 'metalelf0/supertab'
 Plug 'hashivim/vim-terraform'
 Plug 'juliosueiras/vim-terraform-completion'
