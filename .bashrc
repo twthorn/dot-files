@@ -50,15 +50,28 @@ esac
 source ~/.bash_prompt
 
 # Bash history settings
-HISTFILE="$HOME/.bash_history"
-shopt -s histappend               # Append history instead of overwriting
-HISTSIZE=10000                    # Commands to keep in memory per session
-HISTFILESIZE=50000                # Total commands to keep in file
+# Each session gets its own file (seeded from global). Every command writes to
+# both the session file and the global file. Sessions never read from global
+# after startup, so they stay isolated.
+mkdir -p "$HOME/.bash_history.d"
+_SESSION_HISTFILE="$HOME/.bash_history.d/$$"
+cp "$HOME/.bash_history" "$_SESSION_HISTFILE" 2>/dev/null || touch "$_SESSION_HISTFILE"
+HISTFILE="$_SESSION_HISTFILE"
+shopt -s histappend
+HISTSIZE=10000
+HISTFILESIZE=50000
 HISTCONTROL=ignorespace:ignoredups
 HISTTIMEFORMAT='%F %T '
 
-# Persist each command to file immediately and keep in-memory list in sync
-PROMPT_COMMAND="history -a; history -c; history -r; $PROMPT_COMMAND"
+_sync_history() {
+    local before=$(wc -l < "$HISTFILE")
+    history -a
+    local after=$(wc -l < "$HISTFILE")
+    if (( after > before )); then
+        tail -n $(( after - before )) "$HISTFILE" >> "$HOME/.bash_history"
+    fi
+}
+PROMPT_COMMAND="_sync_history; $PROMPT_COMMAND"
 
 # Auto-fix stale SSH agent in tmux panes
 _fixssh() {
