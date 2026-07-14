@@ -2,6 +2,11 @@
 - All repos are at `~/git/<owner>/<repo>` (owner is a GitHub org or username). When given a repo name, find it there and read the code directly.
 - Always prefer referencing and reading code directly over making assumptions about it.
 
+# Research and Citations
+- Back up claims by searching local repos first, then public GitHub or documentation websites. Do not rely on training knowledge alone.
+- Cite sources with clickable links whenever possible — link to specific files, line numbers, or documentation sections.
+- When referencing local code, use the `file_path:line_number` format. When referencing external sources, provide full URLs.
+
 # Commits
 - Always use `git commit -s` (sign-off) on all commits.
 - Branch names must be: `$USER_<ticket-id>` (e.g. `tthornton_PROJ-123`)
