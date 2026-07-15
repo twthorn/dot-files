@@ -5,7 +5,7 @@
 # Research and Citations
 - Back up claims by searching local repos first, then public GitHub or documentation websites. Do not rely on training knowledge alone.
 - Cite sources with clickable links whenever possible — link to specific files, line numbers, or documentation sections.
-- When referencing local code, use the `file_path:line_number` format. When referencing external sources, provide full URLs.
+- Prefer GitHub web links (github.com or enterprise GitHub URLs) over local file paths so they are clickable in the terminal. Include the branch/commit and line number anchor (e.g. `#L42-L50`) when relevant.
 
 # Commits
 - Always use `git commit -s` (sign-off) on all commits.
@@ -15,6 +15,15 @@
 # PR Reviewers
 - Default reviewers: %%REVIEWERS%%
 - Only add reviewers when explicitly asked (e.g. "add default reviewers")
+
+# Code Style
+- Write self-documenting code with clear variable names, function names, and test names. Default to no comments.
+- Only add comments when behavior is genuinely non-obvious and cannot be clarified through naming or structure alone.
+- Exception: if surrounding code already uses comments as part of its structure, match that style.
+
+# Implementation Approach
+- Before writing any code, search the codebase for analogous implementations — similar interfaces, classes, or functionality.
+- Study how they are structured, tested, and integrated. Mirror their patterns in your implementation.
 
 # Testing
 - Follow test-driven development: write a failing test first, implement the feature, then confirm the test passes.
