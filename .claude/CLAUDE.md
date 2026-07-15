@@ -22,7 +22,8 @@
 - Exception: if surrounding code already uses comments as part of its structure, match that style.
 
 # Implementation Approach
-- Before writing any code, search the codebase for analogous implementations — similar interfaces, classes, or functionality.
+- Before writing any code, first check whether the functionality already exists or can be accomplished with existing code.
+- If new code is needed, search the codebase for analogous implementations — similar interfaces, classes, or functionality.
 - Study how they are structured, tested, and integrated. Mirror their patterns in your implementation.
 
 # Testing
