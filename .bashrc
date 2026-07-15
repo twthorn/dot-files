@@ -54,8 +54,14 @@ source ~/.bash_prompt
 # both the session file and the global file. Sessions never read from global
 # after startup, so they stay isolated.
 mkdir -p "$HOME/.bash_history.d"
-_SESSION_HISTFILE="$HOME/.bash_history.d/$$"
-cp "$HOME/.bash_history" "$_SESSION_HISTFILE" 2>/dev/null || touch "$_SESSION_HISTFILE"
+if [[ -n "$TMUX_PANE" ]]; then
+    _SESSION_HISTFILE="$HOME/.bash_history.d/tmux_${TMUX_PANE//[^a-zA-Z0-9]/_}"
+else
+    _SESSION_HISTFILE="$HOME/.bash_history.d/$$"
+fi
+if [[ ! -f "$_SESSION_HISTFILE" ]]; then
+    cp "$HOME/.bash_history" "$_SESSION_HISTFILE" 2>/dev/null || touch "$_SESSION_HISTFILE"
+fi
 HISTFILE="$_SESSION_HISTFILE"
 shopt -s histappend
 HISTSIZE=10000

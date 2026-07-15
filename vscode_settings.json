@@ -22,5 +22,8 @@
   },
   "audioCues.volume": 0,
   "terminal.integrated.enableBell": false,
-  "terminal.integrated.enableVisualBell": false
+  "terminal.integrated.enableVisualBell": false,
+  "window.autoDetectColorScheme": true,
+  "workbench.preferredLightColorTheme": "Default Light+",
+  "workbench.preferredDarkColorTheme": "Default Dark+"
 }
