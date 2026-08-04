@@ -1,5 +1,6 @@
 # Repository Layout
 - All repos are at `~/git/<owner>/<repo>` (owner is a GitHub org or username). When given a repo name, find it there and read the code directly.
+- This layout is identical on every machine (local and all remote hosts) — a repo at `~/git/slack/viz` locally is at `~/git/slack/viz` on every box. Never assume a different path from a repo's own docs; if a checked-in CLAUDE.md or README references a path like `~/viz`, treat it as stale and use `~/git/<owner>/<repo>`.
 - Always prefer referencing and reading code directly over making assumptions about it.
 
 # Research and Citations

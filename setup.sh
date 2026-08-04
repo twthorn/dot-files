@@ -59,11 +59,16 @@ _run_local() {
         TARGET="$HOME/.claude/settings.json"
         [[ ! -f "$TARGET" ]] && echo '{}' > "$TARGET"
 
-        # Build MCP allow rules from ~/.mcp_private.json (e.g. "mcp__slack__*")
-        MCP_ALLOWS="[]"
-        if [[ -f "$HOME/.mcp_private.json" ]]; then
-            MCP_ALLOWS=$(jq '[.mcpServers | keys[] | "mcp__" + . + "__*"]' "$HOME/.mcp_private.json")
-        fi
+        # Build MCP allow rules (e.g. "mcp__slack__*") from every server name found
+        # in ~/.mcp_private.json and in any repo's .mcp.json under ~/git. Repos name
+        # the same server differently (e.g. "slack" vs "slack-mcp"), so union them all.
+        MCP_NAME_FILES=("$HOME/.mcp_private.json")
+        while IFS= read -r f; do
+            MCP_NAME_FILES+=("$f")
+        done < <(find "$HOME/git" -maxdepth 3 -name ".mcp.json" 2>/dev/null)
+
+        MCP_ALLOWS=$(jq -s '[.[].mcpServers // {} | keys[]] | unique | map("mcp__" + . + "__*")' "${MCP_NAME_FILES[@]}" 2>/dev/null)
+        [[ -z "$MCP_ALLOWS" ]] && MCP_ALLOWS="[]"
 
         UPDATED=$(jq --argjson mcp_allows "$MCP_ALLOWS" '.permissions = {
             "allow": (["Bash(*)", "Read(*)", "Edit(*)", "Write(*)", "WebFetch(*)"] + $mcp_allows),
