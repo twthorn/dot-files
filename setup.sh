@@ -9,10 +9,24 @@ cd "$SCRIPT_DIR"
 # Parse flags
 RUN_LOCAL=true
 RUN_REMOTE=true
+SCRIPTS_ONLY=false
 case "${1:-}" in
-    --local-only)  RUN_REMOTE=false ;;
-    --remote-only) RUN_LOCAL=false ;;
+    --local-only)   RUN_REMOTE=false ;;
+    --remote-only)  RUN_LOCAL=false ;;
+    --scripts-only) SCRIPTS_ONLY=true; RUN_REMOTE=false ;;
 esac
+
+# Copy helper scripts to ~/.local/bin. Shared by the full local setup and the
+# fast --scripts-only path so both stay in sync.
+_copy_scripts() {
+    if [[ ! -d "$HOME/.local/bin" ]]; then
+        mkdir -p "$HOME/.local/bin" 2>/dev/null || sudo mkdir -p "$HOME/.local/bin" && sudo chown -R "$USER" "$HOME/.local"
+    fi
+    cp "$SCRIPT_DIR/scripts/restore_tmux.sh" "$HOME/.local/bin/"
+    cp "$SCRIPT_DIR/scripts/tmux_shell.sh" "$HOME/.local/bin/"
+    cp "$SCRIPT_DIR/scripts/purge_tmux.sh" "$HOME/.local/bin/"
+    echo "  Copied helper scripts to ~/.local/bin"
+}
 
 # Abort if running with remotes and there are uncommitted changes
 if [[ "$RUN_REMOTE" == "true" ]] && [[ -d "$SCRIPT_DIR/.git" ]]; then
@@ -47,11 +61,7 @@ _run_local() {
     echo
 
     # Copy helper scripts to ~/.local/bin
-    if [[ ! -d "$HOME/.local/bin" ]]; then
-        mkdir -p "$HOME/.local/bin" 2>/dev/null || sudo mkdir -p "$HOME/.local/bin" && sudo chown -R "$USER" "$HOME/.local"
-    fi
-    cp "$SCRIPT_DIR/scripts/restore_tmux.sh" "$HOME/.local/bin/"
-    cp "$SCRIPT_DIR/scripts/tmux_shell.sh" "$HOME/.local/bin/"
+    _copy_scripts
 
     # Ensure Claude Code permissions (allow everything, deny only external-impact commands)
     mkdir -p "$HOME/.claude"
@@ -325,6 +335,21 @@ _run_remote() {
 # --- Main ---
 echo "=== Dot Files Setup ==="
 RESULTS=()
+
+# Fast path: only sync helper scripts to ~/.local/bin (local host). Skips deps,
+# dotfile copy, settings merge, git config, and the tmux reload loop -- use when
+# only scripts/ changed. Runs even with a dirty repo since it touches nothing
+# that remote hosts pull.
+if [[ "$SCRIPTS_ONLY" == "true" ]]; then
+    echo "Scripts-only sync..."
+    _copy_scripts
+    echo ""
+    echo "========================================"
+    echo "  Summary:"
+    echo "  ✓ $(hostname) (scripts-only)"
+    echo "========================================"
+    exit 0
+fi
 
 if [[ "$RUN_LOCAL" == "true" ]]; then
     if _run_local; then
