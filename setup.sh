@@ -87,11 +87,25 @@ _run_local() {
         echo "$UPDATED" > "$TARGET"
         echo "  Updated Claude Code permissions"
 
-        # Merge MCP servers from ~/.mcp_private.json into global Claude settings
+        # Install MCP servers at USER SCOPE so they are available in every repo.
+        # Claude Code reads MCP servers ONLY from ~/.claude.json (user/local scope)
+        # and per-repo .mcp.json (project scope) -- the mcpServers key in
+        # settings.json is ignored. User scope is the base set for every
+        # directory; a repo's own .mcp.json layers extra servers on top (union),
+        # so we no longer need a session parked in the one repo with the richest
+        # .mcp.json. ~/.claude.json is large and stateful, so merge the key in
+        # place rather than overwriting the file.
+        CLAUDE_JSON="$HOME/.claude.json"
         if [[ -f "$HOME/.mcp_private.json" ]]; then
-            UPDATED=$(jq -s '.[0] * {mcpServers: .[1].mcpServers}' "$TARGET" "$HOME/.mcp_private.json")
-            echo "$UPDATED" > "$TARGET"
-            echo "  Merged MCP servers from ~/.mcp_private.json"
+            [[ ! -f "$CLAUDE_JSON" ]] && echo '{}' > "$CLAUDE_JSON"
+            UPDATED=$(jq -s '.[0] * {mcpServers: ((.[0].mcpServers // {}) * (.[1].mcpServers // {}))}' \
+                "$CLAUDE_JSON" "$HOME/.mcp_private.json")
+            if [[ -n "$UPDATED" ]]; then
+                echo "$UPDATED" > "$CLAUDE_JSON"
+                echo "  Installed MCP servers at user scope in ~/.claude.json"
+            else
+                echo "  WARNING: failed to merge MCP servers into ~/.claude.json (left unchanged)"
+            fi
         fi
     fi
 
