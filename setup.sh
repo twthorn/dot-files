@@ -6,6 +6,10 @@ cd "$SCRIPT_DIR"
 # Source private config early so vars are available throughout
 [[ -f "$HOME/.bashrc_private" ]] && source "$HOME/.bashrc_private"
 
+# Load the git-identity fixer (defines _fix_git_identity; its own main block is
+# skipped when sourced). Run scripts/fix_git_identity.sh directly for --dry-run.
+source "$SCRIPT_DIR/scripts/fix_git_identity.sh"
+
 # Parse flags
 RUN_LOCAL=true
 RUN_REMOTE=true
@@ -25,17 +29,20 @@ _copy_scripts() {
     cp "$SCRIPT_DIR/scripts/restore_tmux.sh" "$HOME/.local/bin/"
     cp "$SCRIPT_DIR/scripts/tmux_shell.sh" "$HOME/.local/bin/"
     cp "$SCRIPT_DIR/scripts/purge_tmux.sh" "$HOME/.local/bin/"
+    cp "$SCRIPT_DIR/scripts/fix_git_identity.sh" "$HOME/.local/bin/"
     echo "  Copied helper scripts to ~/.local/bin"
 }
 
-# Abort if running with remotes and there are uncommitted changes
-if [[ "$RUN_REMOTE" == "true" ]] && [[ -d "$SCRIPT_DIR/.git" ]]; then
-    if ! git -C "$SCRIPT_DIR" diff --quiet || ! git -C "$SCRIPT_DIR" diff --cached --quiet; then
-        echo "ERROR: Uncommitted changes in dot-files repo."
-        echo "Remote hosts will pull stale code. Commit and push first, or use --local-only."
-        exit 1
+# Abort if running with remotes and there are uncommitted changes.
+_check_clean_for_remote() {
+    if [[ "$RUN_REMOTE" == "true" ]] && [[ -d "$SCRIPT_DIR/.git" ]]; then
+        if ! git -C "$SCRIPT_DIR" diff --quiet || ! git -C "$SCRIPT_DIR" diff --cached --quiet; then
+            echo "ERROR: Uncommitted changes in dot-files repo."
+            echo "Remote hosts will pull stale code. Commit and push first, or use --local-only."
+            exit 1
+        fi
     fi
-fi
+}
 
 # --- Local setup ---
 _run_local() {
@@ -159,12 +166,7 @@ _run_local() {
     git config --global alias.ctags '!.git/hooks/ctags'
     git config --global credential.helper store
     git config --global core.editor vim
-    if [[ -n "$GIT_EMAIL" ]]; then
-        printf '[user]\n\temail = %s\n' "$GIT_EMAIL" > "$HOME/.gitconfig-personal"
-    fi
-    if [[ -n "$WORK_EMAIL" ]]; then
-        printf '[user]\n\temail = %s\n' "$WORK_EMAIL" > "$HOME/.gitconfig-work"
-    fi
+    _fix_git_identity
     if [[ ! -f "$HOME/.bashrc_private" ]]; then
         echo "  NOTE: Copy .bashrc_private.example to ~/.bashrc_private and set your WORK_EMAIL and host aliases."
     fi
@@ -347,8 +349,15 @@ _run_remote() {
 }
 
 # --- Main ---
+# When sourced (e.g. by tests) stop here so only the functions above load.
+if [[ "${BASH_SOURCE[0]}" != "${0}" ]]; then
+    return 0 2>/dev/null || exit 0
+fi
+
 echo "=== Dot Files Setup ==="
 RESULTS=()
+
+_check_clean_for_remote
 
 # Fast path: only sync helper scripts to ~/.local/bin (local host). Skips deps,
 # dotfile copy, settings merge, git config, and the tmux reload loop -- use when
