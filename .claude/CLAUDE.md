@@ -13,6 +13,13 @@
 - Branch names must be: `$USER_<ticket-id>` (e.g. `tthornton_PROJ-123`)
 - Never use slashes in branch names.
 
+# Pull Requests
+- Before writing a PR description, find and read the repo's PR template, and follow it exactly. Check `.github/PULL_REQUEST_TEMPLATE.md`, `.github/PULL_REQUEST_TEMPLATE/`, `PULL_REQUEST_TEMPLATE.md`, and `docs/`. Never write the PR body freehand when a template exists.
+- Reproduce every section heading from the template verbatim and in order, and fill each with meaningful, specific content. Do not drop, rename, reorder, or leave a required section empty.
+- Sections like `## Test Plan`, `## Rollout Plan`, and `## Revert Plan` are mandatory whenever the template lists them: describe how the change was validated, how it reaches production, and the concrete steps to roll it back.
+- If a section genuinely does not apply, keep the heading and write why (e.g. "N/A — config-only, no rollout") rather than deleting it.
+- After drafting, re-read the template and confirm every required section is present with real content before creating the PR.
+
 # PR Reviewers
 - Default reviewers: %%REVIEWERS%%
 - Only add reviewers when explicitly asked (e.g. "add default reviewers")

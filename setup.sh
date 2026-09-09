@@ -320,6 +320,17 @@ _run_local() {
     fi
 }
 
+# Emit the shell snippet (run on a remote host) that guarantees the dot-files
+# repo is present and current: clone it -- creating the nested ~/git/<owner>
+# parent -- when missing, otherwise pull. Kept as a pure string-builder so it can
+# be unit tested without a real remote.
+_remote_sync_repo_cmd() {
+    local repo_dir="$1" repo_url="$2" parent
+    parent="$(dirname "$repo_dir")"
+    printf 'if [ -d "$HOME/%s/.git" ]; then git -C "$HOME/%s" pull; else mkdir -p "$HOME/%s" && git clone %s "$HOME/%s"; fi' \
+        "$repo_dir" "$repo_dir" "$parent" "$repo_url" "$repo_dir"
+}
+
 # --- Remote deploy ---
 _run_remote() {
     if [[ ${#REMOTE_HOSTS[@]} -eq 0 ]]; then
@@ -328,7 +339,7 @@ _run_remote() {
     fi
 
     REPO_DIR="git/twthorn/dot-files"
-    FAILED=()
+    REPO_URL="$(git -C "$SCRIPT_DIR" remote get-url origin 2>/dev/null)"
 
     for host in "${REMOTE_HOSTS[@]}"; do
         echo ""
@@ -339,8 +350,8 @@ _run_remote() {
         echo "  Syncing private configs..."
         scp "$HOME/.bashrc_private" "$host:~/.bashrc_private"
         [[ -f "$HOME/.mcp_private.json" ]] && scp "$HOME/.mcp_private.json" "$host:~/.mcp_private.json"
-        echo "  Pulling and running setup --local-only..."
-        if ssh "$host" "cd ~/$REPO_DIR && git pull && ./setup.sh --local-only"; then
+        echo "  Ensuring repo is present (clone if missing, else pull) and running setup --local-only..."
+        if ssh "$host" "$(_remote_sync_repo_cmd "$REPO_DIR" "$REPO_URL") && cd ~/$REPO_DIR && ./setup.sh --local-only"; then
             RESULTS+=("  ✓ $host")
         else
             RESULTS+=("  ✗ $host (errors)")
