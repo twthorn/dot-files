@@ -228,6 +228,7 @@ sync-push() {
 alias t="tmux attach"
 alias tnew='tmux new-session -s "$(pwd | sed "s|^$HOME/|~/|")"'
 alias trestore='bash ~/.local/bin/restore_tmux.sh'
+alias trecover='bash ~/.local/bin/tmux_recover.sh'
 alias tpurge='bash ~/.local/bin/purge_tmux.sh'
 
 # python

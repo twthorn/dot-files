@@ -13,6 +13,14 @@
 - Branch names must be: `$USER_<ticket-id>` (e.g. `tthornton_PROJ-123`)
 - Never use slashes in branch names.
 
+# Jira Tickets
+- Branch names embed a ticket ID (`$USER_<ticket-id>`). Before creating a branch, confirm that ticket exists in Jira (search/get it via the Jira MCP). If it does not exist, create it first, then name the branch after the new ticket's key.
+- Create new tickets in the `%%JIRA_PROJECT%%` project and assign them to `%%JIRA_ASSIGNEE%%` (fall back to the Jira `me` resource if that value is empty).
+- Add every new ticket to the project's latest sprint: find the current active sprint on the `%%JIRA_BOARD%%` board (if none is active, the most recent upcoming one) and set the ticket's Sprint field. Discover the Sprint custom field's ID via the Jira fields resource rather than guessing.
+- Give every new ticket a parent epic. Search the project's open epics and pick the most relevant one for the work — the initiative or theme it belongs to; the current fiscal year or quarter in an epic's name (e.g. `FY27 Q3`) is another signal to look for. Set it via the Epic Link field. If no suitable epic exists, say so and ask rather than creating one.
+- Fill the ticket with full context so it stands on its own and the eventual PR is meaningfully linked to it: a clear summary, the problem/goal, the plan or approach, and any relevant links (repo, related tickets, docs).
+- Use the Jira MCP tools (`create_issue`, `edit_issue`) for all of this. If a field or transition fails, relay the exact error rather than guessing.
+
 # Pull Requests
 - Before writing a PR description, find and read the repo's PR template, and follow it exactly. Check `.github/PULL_REQUEST_TEMPLATE.md`, `.github/PULL_REQUEST_TEMPLATE/`, `PULL_REQUEST_TEMPLATE.md`, and `docs/`. Never write the PR body freehand when a template exists.
 - Reproduce every section heading from the template verbatim and in order, and fill each with meaningful, specific content. Do not drop, rename, reorder, or leave a required section empty.

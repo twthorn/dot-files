@@ -20,8 +20,21 @@ WORK_GIT_DIRS=(
 # Claude Code - PR reviewers (space-separated GitHub usernames)
 GITHUB_REVIEWERS="reviewer1 reviewer2 reviewer3"
 
-# Remote hosts to sync dotfiles/private config to (used by scripts/sync_private.sh)
+# Claude Code - Jira (used to create a ticket when a branch's ticket ID does not
+# exist yet). See the "Jira Tickets" section of ~/.claude/CLAUDE.md.
+JIRA_PROJECT="YOUR_PROJECT_KEY"    # e.g. PROJ
+JIRA_ASSIGNEE="your-jira-username" # who new tickets are assigned to
+JIRA_BOARD="YOUR_BOARD_NAME"       # board whose active sprint new tickets join
+# Remote hosts to sync dotfiles/private config to
 REMOTE_HOSTS=(
     "your-host-1"
     "your-host-2"
+)
+
+# Restricted / separate-domain hosts (e.g. GovCloud). Opt-in only: setup.sh
+# deploys to these alongside REMOTE_HOSTS with --include-gov, or exclusively with
+# --gov-only. They get a github-free, scp-free transport (git archive + ssh cat).
+GOV_HOSTS=(
+    "your-gov-host-1"
+    "your-gov-host-2"
 )

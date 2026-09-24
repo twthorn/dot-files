@@ -67,6 +67,16 @@ case "$MODE" in
         echo
         cd "$RESURRECT_DIR" && ln -sf "$best" last
         echo "Updated 'last' -> $best"
-        echo "Now restore in tmux: Ctrl-Space, then Ctrl-r"
+        # tmux-resurrect only replaces panes when restoring into an empty server;
+        # restoring into live windows splits the saved panes into them, and the
+        # next auto-save bakes those duplicate splits into every later backup.
+        live_panes=$(tmux list-panes -a 2>/dev/null | wc -l | tr -d ' ')
+        if [[ "$live_panes" -gt 1 ]]; then
+            echo "tmux is already running with $live_panes panes -- do NOT press Ctrl-r (it would duplicate panes)."
+            echo "Restart tmux instead and restore once:"
+            echo "  tmux kill-server; trecover"
+        else
+            echo "Now restore: trecover"
+        fi
         ;;
 esac
