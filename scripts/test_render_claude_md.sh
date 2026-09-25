@@ -44,6 +44,8 @@ check_contains "project substituted"      "$OUT" "in STREAM"
 check_contains "assignee substituted"     "$OUT" "assigned to tthornton"
 check_contains "board substituted"        "$OUT" "board STREAM."
 check_absent   "no leftover placeholder"  "$OUT" "%%"
+ERR="$(_render_claude_md "$TMP" 2>&1 >/dev/null)"
+if [[ -z "$ERR" ]]; then echo "  ok: render writes no errors"; else echo "  FAIL: render stderr: $ERR"; FAIL=1; fi
 
 unset GITHUB_REVIEWERS JIRA_PROJECT JIRA_ASSIGNEE JIRA_BOARD
 OUT="$(_render_claude_md "$TMP")"

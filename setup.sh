@@ -61,7 +61,8 @@ _render_claude_md() {
         -e "s/%%REVIEWERS%%/${GITHUB_REVIEWERS:-}/" \
         -e "s/%%JIRA_PROJECT%%/${JIRA_PROJECT:-}/" \
         -e "s/%%JIRA_ASSIGNEE%%/${JIRA_ASSIGNEE:-}/" \
-        -e "s/%%JIRA_BOARD%%/${JIRA_BOARD:-}/" \        "$src"
+        -e "s/%%JIRA_BOARD%%/${JIRA_BOARD:-}/" \
+        "$src"
 }
 
 # --- Local setup ---
