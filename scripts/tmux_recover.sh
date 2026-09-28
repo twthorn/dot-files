@@ -5,7 +5,7 @@
 #
 # tmux-resurrect only recreates panes faithfully when restoring into an empty
 # server; restoring into live windows splits the saved panes into them. So this
-# refuses if a server is already running, picks the best backup (see
+# refuses if tmux already has sessions, picks the best backup (see
 # restore_tmux.sh --auto), starts the server with a throwaway placeholder
 # session, runs the restore, and removes the placeholder.
 #
@@ -17,8 +17,8 @@ RECOVER_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PLACEHOLDER_SESSION="__recover__"
 
 _recover_tmux() {
-    if $TMUX_CMD list-sessions &>/dev/null; then
-        echo "tmux is already running -- restoring into it would duplicate panes. Attach with: t"
+    if [[ -n "$($TMUX_CMD list-sessions -F '#{session_name}' 2>/dev/null)" ]]; then
+        echo "tmux already has sessions -- restoring into them would duplicate panes. Attach with: t"
         echo "To start over from a backup: tmux kill-server; trecover"
         return 1
     fi

@@ -52,6 +52,13 @@ check() { # desc expected actual
 }
 layout() { $TMUX_CMD list-panes -a -F '#{session_name}:#{window_index}' | sort | uniq -c | awk '{print $2"="$1}' | tr '\n' ' ' | sed 's/ *$//'; }
 
+# A server that is up but has zero sessions (e.g. `tmux attach` with nothing to
+# attach to, kept alive briefly by TPM) is safe to restore into.
+tmux -L "$SOCK" -f "$CONF" set -g exit-empty off \; start-server
+if _recover_tmux >/dev/null; then r=ran; else r=refused; fi
+check "restores into running server with no sessions" "ran" "$r"
+tmux -L "$SOCK" kill-server 2>/dev/null
+
 _recover_tmux >/dev/null
 check "restore reproduces saved pane counts" "alpha:1=1 alpha:2=2 beta:1=1" "$(layout)"
 check "no placeholder session left"          "alpha beta" "$($TMUX_CMD list-sessions -F '#{session_name}' | sort | tr '\n' ' ' | sed 's/ *$//')"
