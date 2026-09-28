@@ -74,9 +74,9 @@ case "$MODE" in
         if [[ "$live_panes" -gt 1 ]]; then
             echo "tmux is already running with $live_panes panes -- do NOT press Ctrl-r (it would duplicate panes)."
             echo "Restart tmux instead and restore once:"
-            echo "  tmux kill-server; trecover"
+            echo "  tmux kill-server; tnew"
         else
-            echo "Now restore: trecover"
+            echo "Now restore: tnew (answer r)"
         fi
         ;;
 esac

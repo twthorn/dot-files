@@ -67,6 +67,30 @@ if _recover_tmux >/dev/null; then r=ran; else r=refused; fi
 check "refuses when server already running"  "refused" "$r"
 check "second attempt adds no panes"         "alpha:1=1 alpha:2=2 beta:1=1" "$(layout)"
 
+# tnew: with no sessions and a saved layout, it asks whether to restore or start fresh.
+cd "$TEST_HOME" && mkdir -p proj && cd proj
+tmux -L "$SOCK" kill-server 2>/dev/null
+_tnew <<<r >/dev/null
+check "tnew 'r' restores saved layout"        "alpha:1=1 alpha:2=2 beta:1=1" "$(layout)"
+check "tnew 'r' targets restored sessions"    "" "$TNEW_TARGET"
+
+tmux -L "$SOCK" kill-server 2>/dev/null
+_tnew <<<n >/dev/null
+check "tnew 'n' starts one fresh session"     "~/proj:1=1" "$(layout)"
+check "tnew 'n' targets the fresh session"    "~/proj" "$TNEW_TARGET"
+
+# With sessions already running it must never offer a restore (that would split panes).
+tmux -L "$SOCK" kill-server 2>/dev/null
+_recover_tmux >/dev/null
+_tnew <<<r >/dev/null
+check "tnew with live sessions adds a session, no restore" "~/proj:1=1 alpha:1=1 alpha:2=2 beta:1=1" "$(layout)"
+
+tmux -L "$SOCK" kill-server 2>/dev/null
+mv "$SAVE_DIR" "$SAVE_DIR.off"
+_tnew <<<r >/dev/null
+check "tnew with no backup starts fresh"      "~/proj:1=1" "$(layout)"
+mv "$SAVE_DIR.off" "$SAVE_DIR"
+
 if [[ "$FAIL" -eq 0 ]]; then
     echo "ALL PASS"
 else
