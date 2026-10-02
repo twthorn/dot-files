@@ -88,17 +88,17 @@ _merge_conflict_style() {
     fi
 }
 
-# Use delta as git's pager when it is installed. Skipped otherwise: pointing
+# Use delta as git's pager when it is installed, in --color-only mode: git's own
+# diff layout, with syntax highlighting added. Skipped otherwise: pointing
 # core.pager at a missing binary would break git diff/log.
 _configure_delta() {
     if ! command -v delta >/dev/null 2>&1 && [[ ! -x "$HOME/.local/bin/delta" ]]; then
         echo "  delta not installed; leaving git's default pager"
         return 0
     fi
-    git config --global core.pager delta
+    git config --global core.pager 'delta --color-only'
     git config --global interactive.diffFilter 'delta --color-only'
-    git config --global delta.navigate true
-    git config --global delta.side-by-side true
+    git config --global --remove-section delta 2>/dev/null
     git config --global merge.conflictStyle "$(_merge_conflict_style "$(git --version)")"
     echo "  Configured delta as git pager"
 }

@@ -1,7 +1,8 @@
 #!/bin/bash
 
 # Tests _configure_delta in setup.sh: with delta installed, git uses it as the
-# pager and diff filter; without it, no pager is set (so git diff never fails on
+# pager and diff filter in --color-only mode (classic git diff layout, syntax
+# highlighted), and settings for delta's decorated view are removed; without it, no pager is set (so git diff never fails on
 # a missing binary). The merge conflict style is zdiff3 only on git >= 2.35,
 # which introduced it, and diff3 on older git. Writes to a throwaway global
 # git config only.
@@ -42,11 +43,13 @@ PATH="$TEST_DIR/no-delta" _configure_delta >/dev/null
 check "no delta: pager left unset"        "" "$(global core.pager)"
 check "no delta: diff filter left unset"  "" "$(global interactive.diffFilter)"
 
+for key in delta.side-by-side delta.navigate delta.file-style delta.file-decoration-style; do
+    "$REAL_GIT" config --global "$key" true
+done
 PATH="$TEST_DIR/with-delta" _configure_delta >/dev/null
-check "delta: pager"                 "delta"              "$(global core.pager)"
+check "delta: classic layout pager"   "delta --color-only" "$(global core.pager)"
 check "delta: interactive filter"    "delta --color-only" "$(global interactive.diffFilter)"
-check "delta: navigate"              "true"               "$(global delta.navigate)"
-check "delta: side-by-side"          "true"               "$(global delta.side-by-side)"
+check "delta: decorated-view settings removed" "" "$("$REAL_GIT" config --global --get-regexp '^delta\.')"
 check "conflict style matches git"   "$(_merge_conflict_style "$("$REAL_GIT" --version)")" "$(global merge.conflictStyle)"
 
 if [[ "$FAIL" -eq 0 ]]; then
