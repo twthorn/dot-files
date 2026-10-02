@@ -41,8 +41,8 @@ export HOME="$TESTHOME"
 export GIT_REPO_ROOT="$TESTHOME/git"
 export GIT_NAME="Test User"
 export GIT_EMAIL="personal@example.com"
-export WORK_EMAIL="work@slack-corp.com"
-WORK_GIT_DIRS=("~/git/slack/")
+export WORK_EMAIL="work@acme.example.com"
+WORK_GIT_DIRS=("~/git/acme/")
 
 # Seed a broken global config: NO includes, plus a shadowing top-level user.email
 # and a stale name -- exactly the drift we are repairing.
@@ -52,12 +52,12 @@ cat > "$HOME/.gitconfig" <<EOF
 	email = shadow@example.com
 EOF
 
-mkdir -p "$GIT_REPO_ROOT/slack/webapp" "$GIT_REPO_ROOT/personal/proj"
-git -C "$GIT_REPO_ROOT/slack/webapp"   init -q
+mkdir -p "$GIT_REPO_ROOT/acme/webapp" "$GIT_REPO_ROOT/personal/proj"
+git -C "$GIT_REPO_ROOT/acme/webapp"   init -q
 git -C "$GIT_REPO_ROOT/personal/proj"  init -q
 # Stale local overrides that must be stripped.
-git -C "$GIT_REPO_ROOT/slack/webapp"  config --local user.email "stale-work@wrong.com"
-git -C "$GIT_REPO_ROOT/slack/webapp"  config --local user.name  "Stale Name"
+git -C "$GIT_REPO_ROOT/acme/webapp"  config --local user.email "stale-work@wrong.com"
+git -C "$GIT_REPO_ROOT/acme/webapp"  config --local user.name  "Stale Name"
 git -C "$GIT_REPO_ROOT/personal/proj" config --local user.email "stale-personal@wrong.com"
 
 # shellcheck disable=SC1090
@@ -67,24 +67,24 @@ source "$SETUP"
 DRY_OUT="$(_fix_git_identity --dry-run)"
 check_contains "dry-run reports changes needed" "change(s) needed"    "$DRY_OUT"
 check "dry-run leaves global shadow"     "shadow@example.com"   "$(git config --global --get user.email 2>/dev/null)"
-check "dry-run leaves slack local"       "stale-work@wrong.com" "$(git -C "$GIT_REPO_ROOT/slack/webapp"  config --local --get user.email 2>/dev/null)"
+check "dry-run leaves acme local"        "stale-work@wrong.com" "$(git -C "$GIT_REPO_ROOT/acme/webapp"  config --local --get user.email 2>/dev/null)"
 check "dry-run adds no include"          "0"                    "$(git config --global --get-all include.path 2>/dev/null | grep -cxF '~/.gitconfig-personal')"
 
 # Now apply for real.
 _fix_git_identity >/dev/null
 
-check "slack repo uses work email"       "work@slack-corp.com"  "$(git -C "$GIT_REPO_ROOT/slack/webapp"  config user.email)"
+check "acme repo uses work email"       "work@acme.example.com"  "$(git -C "$GIT_REPO_ROOT/acme/webapp"  config user.email)"
 check "personal repo uses personal"      "personal@example.com" "$(git -C "$GIT_REPO_ROOT/personal/proj" config user.email)"
-check "both repos share global name"     "Test User"            "$(git -C "$GIT_REPO_ROOT/slack/webapp"  config user.name)"
+check "both repos share global name"     "Test User"            "$(git -C "$GIT_REPO_ROOT/acme/webapp"  config user.name)"
 check "no global shadow email"           ""                     "$(git config --global --get user.email 2>/dev/null)"
 check "global name updated"              "Test User"            "$(git config --global user.name)"
-check "slack local email stripped"       ""                     "$(git -C "$GIT_REPO_ROOT/slack/webapp"  config --local --get user.email 2>/dev/null)"
-check "slack local name stripped"        ""                     "$(git -C "$GIT_REPO_ROOT/slack/webapp"  config --local --get user.name 2>/dev/null)"
+check "acme local email stripped"       ""                     "$(git -C "$GIT_REPO_ROOT/acme/webapp"  config --local --get user.email 2>/dev/null)"
+check "acme local name stripped"        ""                     "$(git -C "$GIT_REPO_ROOT/acme/webapp"  config --local --get user.name 2>/dev/null)"
 
 # Idempotency: a second run must not duplicate includes or change results.
 _fix_git_identity >/dev/null
 check "idempotent: one personal include" "1" "$(git config --global --get-all include.path | grep -cxF '~/.gitconfig-personal')"
-check "idempotent: slack still work"     "work@slack-corp.com"  "$(git -C "$GIT_REPO_ROOT/slack/webapp" config user.email)"
+check "idempotent: acme still work"     "work@acme.example.com"  "$(git -C "$GIT_REPO_ROOT/acme/webapp" config user.email)"
 
 # After a successful fix, dry-run must report a clean state.
 DRY_CLEAN="$(_fix_git_identity --dry-run)"

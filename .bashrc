@@ -48,6 +48,7 @@ esac
 
 # source bash prompt
 source ~/.bash_prompt
+source ~/.bash_gh
 
 # Bash history settings
 # Each session gets its own file (seeded from global). Every command writes to

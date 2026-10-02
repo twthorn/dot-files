@@ -20,6 +20,10 @@ WORK_GIT_DIRS=(
 # Claude Code - PR reviewers (space-separated GitHub usernames)
 GITHUB_REVIEWERS="reviewer1 reviewer2 reviewer3"
 
+# Enterprise name. Its GitHub Enterprise host is <name>-github.com; gh commands in
+# repos whose origin is there target it, github.com repos target github.com (~/.bash_gh).
+ENTERPRISE_NAME="acme"
+
 # Claude Code - Jira (used to create a ticket when a branch's ticket ID does not
 # exist yet). See the "Jira Tickets" section of ~/.claude/CLAUDE.md.
 JIRA_PROJECT="YOUR_PROJECT_KEY"    # e.g. PROJ

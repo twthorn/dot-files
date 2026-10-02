@@ -28,7 +28,7 @@ if [[ "$OS" == "Darwin" ]]; then
 
     echo "Installing packages via Homebrew..."
 
-    MACOS_PACKAGES="$COMMON_PACKAGES ctags mysql fswatch pyenv goenv"
+    MACOS_PACKAGES="$COMMON_PACKAGES ctags mysql fswatch pyenv goenv git-delta"
 
     for pkg in $MACOS_PACKAGES; do
         if brew list "$pkg" &>/dev/null; then
@@ -105,5 +105,23 @@ if [[ -d "$TPM_DIR" ]]; then
 else
     echo "  tpm: installing..."
     git clone https://github.com/tmux-plugins/tpm "$TPM_DIR"
+fi
+echo
+
+# delta (git pager): Homebrew on macOS; on Linux the distro packages are missing
+# or old (none on Ubuntu 22.04), so install the release binary to ~/.local/bin.
+DELTA_VERSION="0.19.2"
+if command -v delta &>/dev/null; then
+    echo "  delta: already installed"
+elif [[ "$OS" == "Linux" ]]; then
+    echo "  delta: installing $DELTA_VERSION to ~/.local/bin..."
+    DELTA_ASSET="delta-$DELTA_VERSION-$(uname -m)-unknown-linux-gnu"
+    mkdir -p "$HOME/.local/bin"
+    if curl -fsSL "https://github.com/dandavison/delta/releases/download/$DELTA_VERSION/$DELTA_ASSET.tar.gz" \
+        | tar -xzf - -C "$HOME/.local/bin" --strip-components=1 "$DELTA_ASSET/delta"; then
+        echo "  delta: installed"
+    else
+        echo "  delta: download failed; git keeps its default pager"
+    fi
 fi
 echo

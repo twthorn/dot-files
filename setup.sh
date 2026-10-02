@@ -16,6 +16,7 @@ RUN_REMOTE=true
 SCRIPTS_ONLY=false
 INCLUDE_GOV=false
 GOV_ONLY=false
+CHECK_ONLY=false
 for arg in "$@"; do
     case "$arg" in
         --local-only)   RUN_REMOTE=false ;;
@@ -23,8 +24,17 @@ for arg in "$@"; do
         --scripts-only) SCRIPTS_ONLY=true; RUN_REMOTE=false ;;
         --include-gov)  INCLUDE_GOV=true ;;
         --gov-only)     GOV_ONLY=true; INCLUDE_GOV=true; RUN_LOCAL=false ;;
+        --check)        CHECK_ONLY=true ;;
     esac
 done
+
+# Helper scripts installed to ~/.local/bin.
+DEPLOYED_SCRIPTS=(restore_tmux.sh tmux_recover.sh tmux_shell.sh purge_tmux.sh fix_git_identity.sh)
+
+# Top-level dotfiles/dirs in the repo that the local setup copies into $HOME.
+_deployed_dotfiles() {
+    ls -A "$1" | egrep '^\.' | grep -v .gitconfig | grep -v ".git$" | grep -v .gitignore | grep -v .claude
+}
 
 # Copy helper scripts to ~/.local/bin. Shared by the full local setup and the
 # fast --scripts-only path so both stay in sync.
@@ -32,11 +42,10 @@ _copy_scripts() {
     if [[ ! -d "$HOME/.local/bin" ]]; then
         mkdir -p "$HOME/.local/bin" 2>/dev/null || sudo mkdir -p "$HOME/.local/bin" && sudo chown -R "$USER" "$HOME/.local"
     fi
-    cp "$SCRIPT_DIR/scripts/restore_tmux.sh" "$HOME/.local/bin/"
-    cp "$SCRIPT_DIR/scripts/tmux_recover.sh" "$HOME/.local/bin/"
-    cp "$SCRIPT_DIR/scripts/tmux_shell.sh" "$HOME/.local/bin/"
-    cp "$SCRIPT_DIR/scripts/purge_tmux.sh" "$HOME/.local/bin/"
-    cp "$SCRIPT_DIR/scripts/fix_git_identity.sh" "$HOME/.local/bin/"
+    local name
+    for name in "${DEPLOYED_SCRIPTS[@]}"; do
+        cp "$SCRIPT_DIR/scripts/$name" "$HOME/.local/bin/"
+    done
     echo "  Copied helper scripts to ~/.local/bin"
 }
 
@@ -65,6 +74,35 @@ _render_claude_md() {
         "$src"
 }
 
+# zdiff3 conflict markers arrived in git 2.35; older git rejects the setting.
+_merge_conflict_style() {
+    local major=0 minor=0
+    if [[ "$1" =~ ([0-9]+)\.([0-9]+) ]]; then
+        major="${BASH_REMATCH[1]}"
+        minor="${BASH_REMATCH[2]}"
+    fi
+    if (( major > 2 || (major == 2 && minor >= 35) )); then
+        echo zdiff3
+    else
+        echo diff3
+    fi
+}
+
+# Use delta as git's pager when it is installed. Skipped otherwise: pointing
+# core.pager at a missing binary would break git diff/log.
+_configure_delta() {
+    if ! command -v delta >/dev/null 2>&1 && [[ ! -x "$HOME/.local/bin/delta" ]]; then
+        echo "  delta not installed; leaving git's default pager"
+        return 0
+    fi
+    git config --global core.pager delta
+    git config --global interactive.diffFilter 'delta --color-only'
+    git config --global delta.navigate true
+    git config --global delta.side-by-side true
+    git config --global merge.conflictStyle "$(_merge_conflict_style "$(git --version)")"
+    echo "  Configured delta as git pager"
+}
+
 # --- Local setup ---
 _run_local() {
 
@@ -81,7 +119,7 @@ _run_local() {
 
     # Copy dot files to home directory
     echo "Copying dot files to $HOME..."
-    for f in $(ls -A | egrep '^\.' | grep -v .gitconfig | grep -v ".git$" | grep -v .gitignore | grep -v .claude)
+    for f in $(_deployed_dotfiles .)
     do
         echo "  cp -r $f $HOME"
         cp -r "$f" "$HOME"
@@ -97,9 +135,9 @@ _run_local() {
         TARGET="$HOME/.claude/settings.json"
         [[ ! -f "$TARGET" ]] && echo '{}' > "$TARGET"
 
-        # Build MCP allow rules (e.g. "mcp__slack__*") from every server name found
+        # Build MCP allow rules (e.g. "mcp__chat__*") from every server name found
         # in ~/.mcp_private.json and in any repo's .mcp.json under ~/git. Repos name
-        # the same server differently (e.g. "slack" vs "slack-mcp"), so union them all.
+        # the same server differently (e.g. "chat" vs "chat-mcp"), so union them all.
         MCP_NAME_FILES=("$HOME/.mcp_private.json")
         while IFS= read -r f; do
             MCP_NAME_FILES+=("$f")
@@ -186,6 +224,7 @@ _run_local() {
     git config --global alias.ctags '!.git/hooks/ctags'
     git config --global credential.helper store
     git config --global core.editor vim
+    _configure_delta
     _fix_git_identity
     if [[ ! -f "$HOME/.bashrc_private" ]]; then
         echo "  NOTE: Copy .bashrc_private.example to ~/.bashrc_private and set your WORK_EMAIL and host aliases."
@@ -435,10 +474,109 @@ _run_remote() {
     done
 }
 
+# --- Sync check (--check) ---
+# Compares what each remote host has installed against what this machine would
+# deploy: repo dotfiles, ~/.local/bin scripts, private configs, and the managed
+# CLAUDE.md block. Read-only; files are compared by cksum over one ssh per host.
+SYNC_REPO="$SCRIPT_DIR"
+SYNC_HOME="$HOME"
+SYNC_SSH=_sync_ssh
+CLAUDE_MD_MARKER="# --- dot-files managed ---"
+CLAUDE_MD_BLOCK_LABEL=".claude/CLAUDE.md (managed block)"
+
+_sync_ssh() {
+    ssh -o ConnectTimeout=10 "$1" "$2"
+}
+
+# Print "<path relative to remote $HOME><TAB><local file with the expected content>".
+_sync_manifest() {
+    local name f
+    while IFS= read -r name; do
+        while IFS= read -r f; do
+            printf '%s\t%s\n' "${f#"$SYNC_REPO"/}" "$f"
+        done < <(find "$SYNC_REPO/$name" -type f ! -name .DS_Store | sort)
+    done < <(_deployed_dotfiles "$SYNC_REPO")
+    for name in "${DEPLOYED_SCRIPTS[@]}"; do
+        [[ -f "$SYNC_REPO/scripts/$name" ]] && printf '.local/bin/%s\t%s\n' "$name" "$SYNC_REPO/scripts/$name"
+    done
+    for name in .bashrc_private .mcp_private.json; do
+        [[ -f "$SYNC_HOME/$name" ]] && printf '%s\t%s\n' "$name" "$SYNC_HOME/$name"
+    done
+}
+
+_expected_claude_block_sum() {
+    printf '%s\n%s\n' "$CLAUDE_MD_MARKER" "$(_render_claude_md "$SYNC_REPO/.claude/CLAUDE.md")" | cksum
+}
+
+# Print one "<label>: <path>" line per file that differs from local (changed or
+# missing). Returns non-zero if the host could not be reached.
+_host_drift() {
+    local host="$1" manifest rel src remote_cmd remote_out expected actual
+    manifest="$(_sync_manifest)"
+    remote_cmd='cd ~ || exit 1; for f in'
+    while IFS=$'\t' read -r rel src; do
+        remote_cmd+=" $(printf '%q' "$rel")"
+    done <<<"$manifest"
+    remote_cmd+='; do if [ -f "$f" ]; then echo "$(cksum < "$f")"; else echo MISSING; fi; done'
+    remote_cmd+="; sed -n '/^$CLAUDE_MD_MARKER\$/,\$p' .claude/CLAUDE.md 2>/dev/null | cksum"
+    remote_out="$($SYNC_SSH "$host" "$remote_cmd")" || return 1
+
+    {
+        while IFS=$'\t' read -r rel src; do
+            IFS= read -r actual <&3
+            if [[ "$actual" == MISSING ]]; then
+                echo "missing: $rel"
+            elif [[ "$actual" != "$(cksum < "$src")" ]]; then
+                echo "changed: $rel"
+            fi
+        done <<<"$manifest"
+        IFS= read -r actual <&3
+        [[ "$actual" != "$(_expected_claude_block_sum)" ]] && echo "changed: $CLAUDE_MD_BLOCK_LABEL"
+    } 3<<<"$remote_out"
+    return 0
+}
+
+_check_host() {
+    local host="$1" drift
+    if ! drift="$(_host_drift "$host")"; then
+        echo "  ✗ $host (unreachable)"
+        return 1
+    fi
+    if [[ -z "$drift" ]]; then
+        echo "  ✓ $host"
+        return 0
+    fi
+    echo "  ✗ $host"
+    sed 's/^/      /' <<<"$drift"
+    return 1
+}
+
+_run_check() {
+    local hosts=() h failed=0
+    while IFS= read -r h; do [[ -n "$h" ]] && hosts+=("$h"); done < <(_effective_remote_hosts "$INCLUDE_GOV" "$GOV_ONLY")
+    if [[ ${#hosts[@]} -eq 0 ]]; then
+        echo "No remote hosts to check."
+        return 0
+    fi
+    if ! git -C "$SCRIPT_DIR" diff --quiet HEAD 2>/dev/null; then
+        echo "Note: local repo has uncommitted changes; remotes won't match until you commit and deploy."
+    fi
+    echo "Comparing remote hosts against local..."
+    for h in "${hosts[@]}"; do
+        _check_host "$h" || failed=1
+    done
+    return "$failed"
+}
+
 # --- Main ---
 # When sourced (e.g. by tests) stop here so only the functions above load.
 if [[ "${BASH_SOURCE[0]}" != "${0}" ]]; then
     return 0 2>/dev/null || exit 0
+fi
+
+if [[ "$CHECK_ONLY" == "true" ]]; then
+    _run_check
+    exit $?
 fi
 
 echo "=== Dot Files Setup ==="

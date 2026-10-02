@@ -1,0 +1,27 @@
+# gh only infers its host from the repo for repo-scoped commands; `gh search`,
+# `gh api`, etc. fall back to the default host. Point every gh command at the host
+# of the current repo's origin instead (github.com or the enterprise host derived
+# from ENTERPRISE_NAME in ~/.bashrc_private), unless GH_HOST is set.
+
+_gh_enterprise_host() {
+    [[ -n "${ENTERPRISE_NAME:-}" ]] && echo "$ENTERPRISE_NAME-github.com"
+}
+
+_gh_remote_host() {
+    local host="${1#*@}"
+    host="${host#*://}"
+    host="${host%%[:/]*}"
+    [[ "$host" == github.com || "$host" == "$(_gh_enterprise_host)" ]] && echo "$host"
+}
+
+gh() {
+    local host=""
+    if [[ -z "${GH_HOST:-}" ]]; then
+        host="$(_gh_remote_host "$(git remote get-url origin 2>/dev/null)")"
+    fi
+    if [[ -n "$host" ]]; then
+        GH_HOST="$host" command gh "$@"
+    else
+        command gh "$@"
+    fi
+}
