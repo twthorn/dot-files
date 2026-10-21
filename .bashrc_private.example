@@ -24,6 +24,10 @@ GITHUB_REVIEWERS="reviewer1 reviewer2 reviewer3"
 # repos whose origin is there target it, github.com repos target github.com (~/.bash_gh).
 ENTERPRISE_NAME="acme"
 
+# Public github.com orgs (besides the enterprise one) that Claude Code may push and
+# open PRs to; setup.sh writes them to autoMode.environment in ~/.claude/settings.json.
+TRUSTED_GITHUB_ORGS=("acmehq")
+
 # Claude Code - Jira (used to create a ticket when a branch's ticket ID does not
 # exist yet). See the "Jira Tickets" section of ~/.claude/CLAUDE.md.
 JIRA_PROJECT="YOUR_PROJECT_KEY"    # e.g. PROJ
@@ -42,3 +46,6 @@ GOV_HOSTS=(
     "your-gov-host-1"
     "your-gov-host-2"
 )
+
+# Command that launches Claude Code; tnew/tclaude run "<it> --continue" to resume it.
+CLAUDE_COMMAND="claude"

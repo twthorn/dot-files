@@ -29,7 +29,7 @@ for arg in "$@"; do
 done
 
 # Helper scripts installed to ~/.local/bin.
-DEPLOYED_SCRIPTS=(restore_tmux.sh tmux_recover.sh tmux_shell.sh purge_tmux.sh fix_git_identity.sh)
+DEPLOYED_SCRIPTS=(restore_tmux.sh tmux_recover.sh claude_resume.sh tmux_shell.sh purge_tmux.sh fix_git_identity.sh)
 
 # Top-level dotfiles/dirs in the repo that the local setup copies into $HOME.
 _deployed_dotfiles() {
@@ -72,6 +72,31 @@ _render_claude_md() {
         -e "s/%%JIRA_ASSIGNEE%%/${JIRA_ASSIGNEE:-}/" \
         -e "s/%%JIRA_BOARD%%/${JIRA_BOARD:-}/" \
         "$src"
+}
+
+# Tell the Claude Code auto mode classifier which source-control orgs Claude may
+# push and open PRs to: the enterprise org (<ENTERPRISE_NAME>-github.com/<name>)
+# and each of TRUSTED_GITHUB_ORGS on github.com (~/.bashrc_private). The
+# classifier reads autoMode.environment as prose, so the entries come from fixed
+# templates; "$defaults" keeps the built-in entries. Nothing configured removes it.
+_auto_mode_source_control_entries() {
+    local org
+    if [[ -n "${ENTERPRISE_NAME:-}" ]]; then
+        echo "Source control: $ENTERPRISE_NAME-github.com/$ENTERPRISE_NAME and all repos under it (~/git/$ENTERPRISE_NAME/)"
+    fi
+    if [[ -n "${TRUSTED_GITHUB_ORGS+x}" ]]; then
+        for org in "${TRUSTED_GITHUB_ORGS[@]}"; do
+            echo "Source control: github.com/$org and all repos under it (~/git/$org/). These repos are public: pushing branches and opening pull requests there is routine, but only each repo's own work belongs there; internal or confidential material must never be pushed to them."
+        done
+    fi
+}
+
+_apply_auto_mode_environment() {
+    local target="$1" entries updated
+    entries=$(_auto_mode_source_control_entries | jq -R . | jq -s .)
+    updated=$(jq --argjson entries "$entries" '
+        if ($entries | length) > 0 then .autoMode.environment = (["$defaults"] + $entries)
+        else del(.autoMode) end' "$target") && echo "$updated" > "$target"
 }
 
 # zdiff3 conflict markers arrived in git 2.35; older git rejects the setting.
@@ -147,11 +172,12 @@ _run_local() {
         [[ -z "$MCP_ALLOWS" ]] && MCP_ALLOWS="[]"
 
         UPDATED=$(jq --argjson mcp_allows "$MCP_ALLOWS" '.permissions = {
-            "allow": (["Bash(*)", "Read(*)", "Edit(*)", "Write(*)", "WebFetch(*)"] + $mcp_allows),
+            "allow": (["Bash(*)", "Read(*)", "Edit(*)", "Edit(~/.bashrc_private)", "Write(*)", "WebFetch(*)"] + $mcp_allows),
             "deny": ["Bash(rm -rf *)", "Bash(docker rm *)", "Bash(docker rmi *)", "Bash(kubectl delete *)", "Bash(kubectl apply *)", "Bash(kubectl scale *)", "Bash(kubectl rollout *)", "Bash(kubectl exec *)", "Bash(kubectl cordon *)", "Bash(kubectl drain *)", "Bash(knife *)", "Bash(gnife *)", "Bash(helm install *)", "Bash(helm upgrade *)", "Bash(helm uninstall *)", "Bash(terraform apply *)", "Bash(terraform destroy *)"]
         }' "$TARGET")
         echo "$UPDATED" > "$TARGET"
         echo "  Updated Claude Code permissions"
+        _apply_auto_mode_environment "$TARGET"
 
         # Install MCP servers at USER SCOPE so they are available in every repo.
         # Claude Code reads MCP servers ONLY from ~/.claude.json (user/local scope)

@@ -3,7 +3,8 @@
 # Tests tmux_recover.sh: starting a fresh server and restoring the saved layout
 # must reproduce each window's pane count exactly (no duplicate splits), leave no
 # placeholder session behind, and refuse to restore into an already-running
-# server. Runs the real tmux-resurrect restore against a throwaway server
+# server. After a restore, Claude is resumed in each session's first pane (see
+# test_claude_resume.sh for the rules). Runs the real tmux-resurrect restore against a throwaway server
 # (-L recovertest_$$) and a throwaway HOME so real sessions/backups are untouched.
 
 set -u
@@ -11,7 +12,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REAL_RESTORE="$HOME/.tmux/plugins/tmux-resurrect/scripts/restore.sh"
 [[ -x "$REAL_RESTORE" ]] || { echo "SKIP: tmux-resurrect not installed"; exit 0; }
 
-TEST_HOME="$(mktemp -d)"
+TEST_HOME="$(cd "$(mktemp -d)" && pwd -P)"
 SOCK="recovertest_$$"
 CONF="$TEST_HOME/tmux.conf"
 printf 'set -g base-index 1\nsetw -g pane-base-index 1\n' > "$CONF"
@@ -37,6 +38,12 @@ T=$'\t'
     echo "state${T}alpha${T}beta"
 } > "$SAVE_DIR/tmux_resurrect_20260101T000000.txt"
 ln -sf tmux_resurrect_20260101T000000.txt "$SAVE_DIR/last"
+mkdir -p "$TEST_HOME/bin" "$TEST_HOME/.claude/projects/${TEST_HOME//[^a-zA-Z0-9]/-}"
+touch "$TEST_HOME/.claude/projects/${TEST_HOME//[^a-zA-Z0-9]/-}/abc.jsonl"
+RESUME_LOG="$TEST_HOME/resumed.log"
+printf '#!/bin/sh\necho "$TMUX_PANE" >> %s\n' "$RESUME_LOG" > "$TEST_HOME/bin/fake-claude"
+chmod +x "$TEST_HOME/bin/fake-claude"
+export CLAUDE_COMMAND="$TEST_HOME/bin/fake-claude"
 
 # shellcheck disable=SC1091
 source "$SCRIPT_DIR/tmux_recover.sh"
@@ -59,9 +66,13 @@ if _recover_tmux >/dev/null; then r=ran; else r=refused; fi
 check "restores into running server with no sessions" "ran" "$r"
 tmux -L "$SOCK" kill-server 2>/dev/null
 
+rm -f "$RESUME_LOG"
 _recover_tmux >/dev/null
 check "restore reproduces saved pane counts" "alpha:1=1 alpha:2=2 beta:1=1" "$(layout)"
 check "no placeholder session left"          "alpha beta" "$($TMUX_CMD list-sessions -F '#{session_name}' | sort | tr '\n' ' ' | sed 's/ *$//')"
+sleep 1
+first_panes="$(for s in alpha beta; do $TMUX_CMD display-message -p -t "=$s:1.1" '#{pane_id}'; done | sort | tr '\n' ' ')"
+check "claude resumed in each session's first pane" "$first_panes" "$(sort "$RESUME_LOG" 2>/dev/null | tr '\n' ' ')"
 
 if _recover_tmux >/dev/null; then r=ran; else r=refused; fi
 check "refuses when server already running"  "refused" "$r"

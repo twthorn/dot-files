@@ -50,35 +50,7 @@ esac
 source ~/.bash_prompt
 source ~/.bash_gh
 
-# Bash history settings
-# Each session gets its own file (seeded from global). Every command writes to
-# both the session file and the global file. Sessions never read from global
-# after startup, so they stay isolated.
-mkdir -p "$HOME/.bash_history.d"
-if [[ -n "$TMUX_PANE" ]]; then
-    _SESSION_HISTFILE="$HOME/.bash_history.d/tmux_${TMUX_PANE//[^a-zA-Z0-9]/_}"
-else
-    _SESSION_HISTFILE="$HOME/.bash_history.d/$$"
-fi
-if [[ ! -f "$_SESSION_HISTFILE" ]]; then
-    cp "$HOME/.bash_history" "$_SESSION_HISTFILE" 2>/dev/null || touch "$_SESSION_HISTFILE"
-fi
-HISTFILE="$_SESSION_HISTFILE"
-shopt -s histappend
-HISTSIZE=10000
-HISTFILESIZE=50000
-HISTCONTROL=ignorespace:ignoredups
-HISTTIMEFORMAT='%F %T '
-
-_sync_history() {
-    local before=$(wc -l < "$HISTFILE")
-    history -a
-    local after=$(wc -l < "$HISTFILE")
-    if (( after > before )); then
-        tail -n $(( after - before )) "$HISTFILE" >> "$HOME/.bash_history"
-    fi
-}
-PROMPT_COMMAND="_sync_history; $PROMPT_COMMAND"
+source ~/.bash_history_setup
 
 # Auto-fix stale SSH agent in tmux panes
 _fixssh() {
@@ -230,6 +202,7 @@ alias t="tmux attach"
 alias tnew='bash ~/.local/bin/tmux_recover.sh'
 alias trestore='bash ~/.local/bin/restore_tmux.sh'
 alias tpurge='bash ~/.local/bin/purge_tmux.sh'
+alias tclaude='bash ~/.local/bin/claude_resume.sh'
 
 # python
 if command -v pyenv 1>/dev/null 2>&1; then

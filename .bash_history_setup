@@ -1,0 +1,37 @@
+# Bash history settings
+# Each session gets its own file (seeded from global). Every command writes to
+# both the session file and the global file. Sessions never read from global
+# after startup, so they stay isolated.
+#
+# tmux session files are keyed by server pid + pane id: a new tmux server (e.g.
+# after a reboot + restore) reuses pane ids like %5, and must start each pane
+# from global history rather than a file left by an older server's pane.
+mkdir -p "$HOME/.bash_history.d"
+find "$HOME/.bash_history.d" -type f -mtime +30 -delete 2>/dev/null
+if [[ -n "${TMUX:-}" && -n "${TMUX_PANE:-}" ]]; then
+    _TMUX_SERVER_PID="${TMUX#*,}"
+    _TMUX_SERVER_PID="${_TMUX_SERVER_PID%%,*}"
+    _SESSION_HISTFILE="$HOME/.bash_history.d/tmux_${_TMUX_SERVER_PID}_${TMUX_PANE//[^a-zA-Z0-9]/_}"
+else
+    _SESSION_HISTFILE="$HOME/.bash_history.d/$$"
+fi
+if [[ ! -f "$_SESSION_HISTFILE" ]]; then
+    cp "$HOME/.bash_history" "$_SESSION_HISTFILE" 2>/dev/null || touch "$_SESSION_HISTFILE"
+fi
+HISTFILE="$_SESSION_HISTFILE"
+shopt -s histappend
+HISTSIZE=10000
+HISTFILESIZE=50000
+HISTCONTROL=ignorespace:ignoredups
+HISTTIMEFORMAT='%F %T '
+
+_sync_history() {
+    local before after
+    before=$(wc -l < "$HISTFILE" 2>/dev/null || echo 0)
+    history -a
+    after=$(wc -l < "$HISTFILE")
+    if (( after > before )); then
+        tail -n $(( after - before )) "$HISTFILE" >> "$HOME/.bash_history"
+    fi
+}
+PROMPT_COMMAND="_sync_history; ${PROMPT_COMMAND:-}"
