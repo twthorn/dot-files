@@ -7,6 +7,7 @@
 - Back up claims by searching local repos first, then public GitHub or documentation websites. Do not rely on training knowledge alone.
 - Cite sources with clickable links whenever possible — link to specific files, line numbers, or documentation sections.
 - Prefer GitHub web links (github.com or enterprise GitHub URLs) over local file paths so they are clickable in the terminal. Include the branch/commit and line number anchor (e.g. `#L42-L50`) when relevant.
+- Verify every link before sharing it. Open or fetch the URL yourself (e.g. WebFetch, `curl -sI`, `gh api`, or checking that the referenced file, commit, and line range exist), and confirm it resolves and points at the content you are citing. Never share a URL built from memory or by guessing at its structure without checking it. If a link cannot be verified — for example, it sits behind a login or on a host you cannot reach — say so explicitly next to the link.
 
 # Commits
 - Always use `git commit -s` (sign-off) on all commits.

@@ -9,6 +9,10 @@
 # each first pane was running when the layout was saved: idle or Claude gets
 # resumed, anything else (vim, less, ...) is being restored by tmux-resurrect.
 #
+# Before typing into any pane it runs "$CLAUDE_COMMAND --version" once in the
+# foreground, so a wrapper that logs in first (e.g. AWS SSO) asks here once and
+# every pane then reuses that login, instead of each pane asking on its own.
+#
 # CLAUDE_COMMAND defaults to claude; override it in ~/.bashrc_private.
 #
 # Usage: claude_resume.sh [--after-restore]   (alias: tclaude)
@@ -35,12 +39,14 @@ _saved_first_pane_command() { # session
         | sort -t "$TAB" -k1,1n -k2,2n | head -1 | cut -f3
 }
 
-_was_idle_or_claude() { # saved command
-    [[ -z "$1" || "$1" == claude* ]]
+_was_idle_or_claude() { # saved command, possibly a full path (/.../bin/claude -r)
+    local program="${1%% *}"
+    [[ -z "$1" || "${program##*/}" == claude ]]
 }
 
 _resume_claude() { # [--after-restore]
     local session pane_id command dir
+    local -a targets=()
     while IFS= read -r session; do
         IFS="$TAB" read -r pane_id command dir < <(
             $TMUX_CMD list-panes -s -t "=$session" -F "#{pane_id}${TAB}#{pane_current_command}${TAB}#{pane_current_path}" | head -1)
@@ -50,9 +56,20 @@ _resume_claude() { # [--after-restore]
             _is_shell "$command" || continue
         fi
         _has_claude_history "$dir" || continue
+        targets+=("$pane_id$TAB$session$TAB$dir")
+    done < <($TMUX_CMD list-sessions -F '#{session_name}' 2>/dev/null)
+
+    [[ ${#targets[@]} -gt 0 ]] || return 0
+    if ! $CLAUDE_COMMAND --version; then
+        echo "Could not start $CLAUDE_COMMAND (login failed?); not resuming Claude. Retry with: tclaude"
+        return 1
+    fi
+    local target
+    for target in "${targets[@]}"; do
+        IFS="$TAB" read -r pane_id session dir <<<"$target"
         $TMUX_CMD send-keys -t "$pane_id" "$CLAUDE_COMMAND --continue" Enter
         echo "Resumed Claude in $session (${dir/#$HOME/~})"
-    done < <($TMUX_CMD list-sessions -F '#{session_name}' 2>/dev/null)
+    done
 }
 
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then

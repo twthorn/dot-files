@@ -4,7 +4,11 @@
 # "$CLAUDE_COMMAND --continue" only when it sits idle at a shell in a directory
 # that has a previous Claude conversation; other panes, busy panes and dirs with
 # no history are left alone. With --after-restore (panes still starting up) the
-# decision comes from what the first pane was running in the saved layout.
+# decision comes from what the first pane was running in the saved layout, where
+# Claude may be recorded by its full path (Linux: .../node/v24/bin/claude). Before
+# typing into any pane, "$CLAUDE_COMMAND --version" runs once in the foreground
+# so a wrapper that logs in first (e.g. AWS SSO) asks once, not in every pane; if
+# that fails nothing is resumed.
 # Runs a throwaway tmux server (-L) and HOME; the fake claude logs its pane.
 
 set -u
@@ -27,7 +31,12 @@ mkdir -p "$WITH_HISTORY" "$NO_HISTORY" "$TEST_HOME/bin" "$TEST_HOME/.tmux/resurr
 mkdir -p "$TEST_HOME/.claude/projects/${WITH_HISTORY//[^a-zA-Z0-9]/-}"
 touch "$TEST_HOME/.claude/projects/${WITH_HISTORY//[^a-zA-Z0-9]/-}/abc.jsonl"
 RESUME_LOG="$TEST_HOME/resumed.log"
-printf '#!/bin/sh\necho "$TMUX_PANE $PWD $*" >> %s\n' "$RESUME_LOG" > "$TEST_HOME/bin/fake-claude"
+LOGIN_LOG="$TEST_HOME/login.log"
+cat > "$TEST_HOME/bin/fake-claude" <<EOF
+#!/bin/sh
+if [ "\$1" = --version ]; then echo login >> "$LOGIN_LOG"; exit "\${FAKE_LOGIN_EXIT:-0}"; fi
+echo "\$TMUX_PANE \$PWD \$*" >> "$RESUME_LOG"
+EOF
 chmod +x "$TEST_HOME/bin/fake-claude"
 export CLAUDE_COMMAND="$TEST_HOME/bin/fake-claude"
 
@@ -55,20 +64,31 @@ $TMUX_CMD new-session -d -s nohistory -c "$NO_HISTORY"
 $TMUX_CMD new-session -d -s busy -c "$WITH_HISTORY" 'sleep 300'
 sleep 0.5
 
+FAKE_LOGIN_EXIT=1 _resume_claude >/dev/null 2>&1
+check "failed login resumes nothing" "" "$(resumed)"
+rm -f "$LOGIN_LOG" "$RESUME_LOG"
+
 _resume_claude >/dev/null
 check "only the idle first pane with history is resumed" \
     "$(pane_of idle:1.1) $WITH_HISTORY --continue;" "$(resumed)"
+check "logs in once before resuming" "1" "$(wc -l < "$LOGIN_LOG" | tr -d ' ')"
+
+rm -f "$RESUME_LOG" "$LOGIN_LOG"
+$TMUX_CMD kill-session -t "=idle"
+_resume_claude >/dev/null
+check "no login when there is nothing to resume" "absent" "$([[ -e "$LOGIN_LOG" ]] && echo present || echo absent)"
 
 rm -f "$RESUME_LOG"
 T=$'\t'
 {
     echo "pane${T}wasidle${T}1${T}1${T}:*${T}1${T}t${T}:$WITH_HISTORY${T}1${T}bash${T}:"
     echo "pane${T}wasclaude${T}1${T}1${T}:*${T}1${T}t${T}:$WITH_HISTORY${T}1${T}claude${T}:claude --settings {} -r"
+    echo "pane${T}wasclaudepath${T}1${T}1${T}:*${T}1${T}t${T}:$WITH_HISTORY${T}1${T}claude${T}:/home/me/.nvm/versions/node/v24.11.1/bin/claude -r"
     echo "pane${T}wasvim${T}1${T}1${T}:*${T}1${T}t${T}:$WITH_HISTORY${T}1${T}vim${T}:vim notes.md"
     echo "pane${T}wasvim${T}2${T}0${T}:${T}1${T}t${T}:$WITH_HISTORY${T}1${T}bash${T}:"
 } > "$TEST_HOME/.tmux/resurrect/last"
 tmux -L "$SOCK" kill-server 2>/dev/null
-for s in wasidle wasclaude wasvim; do
+for s in wasidle wasclaude wasclaudepath wasvim; do
     $TMUX_CMD new-session -d -s "$s" -c "$WITH_HISTORY"
 done
 $TMUX_CMD new-window -d -t wasvim:2 -c "$WITH_HISTORY"
@@ -76,7 +96,7 @@ sleep 0.5
 
 _resume_claude --after-restore >/dev/null
 check "after restore: first panes that were idle or in claude are resumed, not ones restoring another program" \
-    "$(printf '%s\n' "$(pane_of wasclaude:1.1) $WITH_HISTORY --continue" "$(pane_of wasidle:1.1) $WITH_HISTORY --continue" | sort | tr '\n' ';')" \
+    "$(for s in wasclaude wasclaudepath wasidle; do echo "$(pane_of "$s:1.1") $WITH_HISTORY --continue"; done | sort | tr '\n' ';')" \
     "$(resumed)"
 
 if [[ "$FAIL" -eq 0 ]]; then

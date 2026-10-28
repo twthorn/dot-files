@@ -74,6 +74,15 @@ _render_claude_md() {
         "$src"
 }
 
+# Claude may read Slack but never act in it as the user: post, react, edit
+# canvases/lists, upload files or mark things read. Tool-name globs cover the
+# Slack MCP under whatever server name a repo's .mcp.json gives it; deny beats
+# every allow rule and every permission mode.
+_slack_write_deny_rules() {
+    jq -n '["send_*", "schedule_*", "add_*", "create_*", "update_*", "delete_*",
+        "get_file_upload_url", "complete_file_upload", "mark_read"] | map("mcp__*__slack_" + .)'
+}
+
 # Tell the Claude Code auto mode classifier which source-control orgs Claude may
 # push and open PRs to: the enterprise org (<ENTERPRISE_NAME>-github.com/<name>)
 # and each of TRUSTED_GITHUB_ORGS on github.com (~/.bashrc_private). The
@@ -171,9 +180,9 @@ _run_local() {
         MCP_ALLOWS=$(jq -s '[.[].mcpServers // {} | keys[]] | unique | map("mcp__" + . + "__*")' "${MCP_NAME_FILES[@]}" 2>/dev/null)
         [[ -z "$MCP_ALLOWS" ]] && MCP_ALLOWS="[]"
 
-        UPDATED=$(jq --argjson mcp_allows "$MCP_ALLOWS" '.permissions = {
+        UPDATED=$(jq --argjson mcp_allows "$MCP_ALLOWS" --argjson slack_write_denies "$(_slack_write_deny_rules)" '.permissions = {
             "allow": (["Bash(*)", "Read(*)", "Edit(*)", "Edit(~/.bashrc_private)", "Write(*)", "WebFetch(*)"] + $mcp_allows),
-            "deny": ["Bash(rm -rf *)", "Bash(docker rm *)", "Bash(docker rmi *)", "Bash(kubectl delete *)", "Bash(kubectl apply *)", "Bash(kubectl scale *)", "Bash(kubectl rollout *)", "Bash(kubectl exec *)", "Bash(kubectl cordon *)", "Bash(kubectl drain *)", "Bash(knife *)", "Bash(gnife *)", "Bash(helm install *)", "Bash(helm upgrade *)", "Bash(helm uninstall *)", "Bash(terraform apply *)", "Bash(terraform destroy *)"]
+            "deny": ["Bash(rm -rf *)", "Bash(docker rm *)", "Bash(docker rmi *)", "Bash(kubectl delete *)", "Bash(kubectl apply *)", "Bash(kubectl scale *)", "Bash(kubectl rollout *)", "Bash(kubectl exec *)", "Bash(kubectl cordon *)", "Bash(kubectl drain *)", "Bash(knife *)", "Bash(gnife *)", "Bash(helm install *)", "Bash(helm upgrade *)", "Bash(helm uninstall *)", "Bash(terraform apply *)", "Bash(terraform destroy *)"] + $slack_write_denies
         }' "$TARGET")
         echo "$UPDATED" > "$TARGET"
         echo "  Updated Claude Code permissions"

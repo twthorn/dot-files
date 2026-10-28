@@ -41,7 +41,7 @@ ln -sf tmux_resurrect_20260101T000000.txt "$SAVE_DIR/last"
 mkdir -p "$TEST_HOME/bin" "$TEST_HOME/.claude/projects/${TEST_HOME//[^a-zA-Z0-9]/-}"
 touch "$TEST_HOME/.claude/projects/${TEST_HOME//[^a-zA-Z0-9]/-}/abc.jsonl"
 RESUME_LOG="$TEST_HOME/resumed.log"
-printf '#!/bin/sh\necho "$TMUX_PANE" >> %s\n' "$RESUME_LOG" > "$TEST_HOME/bin/fake-claude"
+printf '#!/bin/sh\n[ "$1" = --version ] && exit 0\necho "$TMUX_PANE" >> %s\n' "$RESUME_LOG" > "$TEST_HOME/bin/fake-claude"
 chmod +x "$TEST_HOME/bin/fake-claude"
 export CLAUDE_COMMAND="$TEST_HOME/bin/fake-claude"
 
