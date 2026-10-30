@@ -83,16 +83,18 @@ _slack_write_deny_rules() {
         "get_file_upload_url", "complete_file_upload", "mark_read"] | map("mcp__*__slack_" + .)'
 }
 
-# Likewise Google Workspace is read-only: no sending, drafting, editing,
-# formatting, creating, moving, sharing or uploading. The verbs are matched in
-# any product (gmail_send, sheets_update_values, drive_share, ...). The server
-# name is fixed because unanchored verbs would also hit other servers' tools.
+# Likewise Google Workspace: Claude may create new things (files, copies,
+# conversions, uploads, folders, drafts, events, tasks, labels, filters) but never
+# change existing ones -- no editing, formatting, commenting, moving, renaming,
+# sharing, completing -- or send mail. The verbs are matched in any product (sheets_update_values, drive_share,
+# ...). The server name is fixed because unanchored verbs would also hit other
+# servers' tools.
 _google_workspace_write_deny_rules() {
-    jq -n '["create*", "update*", "add_*", "insert_*", "append_*", "edit*", "replace_*", "format_*",
+    jq -n '["update*", "add_*", "insert_*", "append_*", "edit*", "replace_*", "format_*",
         "conditional_format", "data_validation", "set_*", "resize_*", "rename*", "move*", "reorder*",
-        "duplicate_*", "copy*", "convert*", "delete*", "remove*", "trash*", "share", "upload*",
-        "send*", "reply*", "modify", "batch_modify", "batch_update_*", "complete"]
-        | map("mcp__google-workspace__*_" + .)'
+        "duplicate_*", "delete*", "remove*", "trash*", "share", "send*", "reply*", "modify",
+        "batch_modify", "batch_update_*", "complete", "create_comment", "create_line", "create_table",
+        "create_text_box"] | map("mcp__google-workspace__*_" + .)'
 }
 
 # Tell the Claude Code auto mode classifier which source-control orgs Claude may
