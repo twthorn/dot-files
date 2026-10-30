@@ -74,29 +74,6 @@ _render_claude_md() {
         "$src"
 }
 
-# Claude may read Slack and create new canvases but never otherwise act in it as
-# the user: post, react, edit existing canvases or lists, upload files or mark
-# things read. Tool-name globs cover the Slack MCP under whatever server name a
-# repo's .mcp.json gives it; deny beats every allow rule and every permission mode.
-_slack_write_deny_rules() {
-    jq -n '["send_*", "schedule_*", "add_*", "create_conversation", "create_list", "update_*", "delete_*",
-        "get_file_upload_url", "complete_file_upload", "mark_read"] | map("mcp__*__slack_" + .)'
-}
-
-# Likewise Google Workspace: Claude may create new things (files, copies,
-# conversions, uploads, folders, drafts, events, tasks, labels, filters) but never
-# change existing ones -- no editing, formatting, commenting, moving, renaming,
-# sharing, completing -- or send mail. The verbs are matched in any product (sheets_update_values, drive_share,
-# ...). The server name is fixed because unanchored verbs would also hit other
-# servers' tools.
-_google_workspace_write_deny_rules() {
-    jq -n '["update*", "add_*", "insert_*", "append_*", "edit*", "replace_*", "format_*",
-        "conditional_format", "data_validation", "set_*", "resize_*", "rename*", "move*", "reorder*",
-        "duplicate_*", "delete*", "remove*", "trash*", "share", "send*", "reply*", "modify",
-        "batch_modify", "batch_update_*", "complete", "create_comment", "create_line", "create_table",
-        "create_text_box"] | map("mcp__google-workspace__*_" + .)'
-}
-
 # Tell the Claude Code auto mode classifier which source-control orgs Claude may
 # push and open PRs to: the enterprise org (<ENTERPRISE_NAME>-github.com/<name>)
 # and each of TRUSTED_GITHUB_ORGS on github.com (~/.bashrc_private). The
@@ -194,9 +171,9 @@ _run_local() {
         MCP_ALLOWS=$(jq -s '[.[].mcpServers // {} | keys[]] | unique | map("mcp__" + . + "__*")' "${MCP_NAME_FILES[@]}" 2>/dev/null)
         [[ -z "$MCP_ALLOWS" ]] && MCP_ALLOWS="[]"
 
-        UPDATED=$(jq --argjson mcp_allows "$MCP_ALLOWS" --argjson slack_write_denies "$(_slack_write_deny_rules)" --argjson google_workspace_write_denies "$(_google_workspace_write_deny_rules)" '.permissions = {
+        UPDATED=$(jq --argjson mcp_allows "$MCP_ALLOWS" '.permissions = {
             "allow": (["Bash(*)", "Read(*)", "Edit(*)", "Edit(~/.bashrc_private)", "Write(*)", "WebFetch(*)"] + $mcp_allows),
-            "deny": ["Bash(rm -rf *)", "Bash(docker rm *)", "Bash(docker rmi *)", "Bash(kubectl delete *)", "Bash(kubectl apply *)", "Bash(kubectl scale *)", "Bash(kubectl rollout *)", "Bash(kubectl exec *)", "Bash(kubectl cordon *)", "Bash(kubectl drain *)", "Bash(knife *)", "Bash(gnife *)", "Bash(helm install *)", "Bash(helm upgrade *)", "Bash(helm uninstall *)", "Bash(terraform apply *)", "Bash(terraform destroy *)"] + $slack_write_denies + $google_workspace_write_denies
+            "deny": ["Bash(rm -rf *)", "Bash(docker rm *)", "Bash(docker rmi *)", "Bash(kubectl delete *)", "Bash(kubectl apply *)", "Bash(kubectl scale *)", "Bash(kubectl rollout *)", "Bash(kubectl exec *)", "Bash(kubectl cordon *)", "Bash(kubectl drain *)", "Bash(knife *)", "Bash(gnife *)", "Bash(helm install *)", "Bash(helm upgrade *)", "Bash(helm uninstall *)", "Bash(terraform apply *)", "Bash(terraform destroy *)"]
         }' "$TARGET")
         echo "$UPDATED" > "$TARGET"
         echo "  Updated Claude Code permissions"
