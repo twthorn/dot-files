@@ -64,10 +64,23 @@ _check_clean_for_remote() {
 # %%REVIEWERS%% and the Jira placeholders with values from the private config
 # (~/.bashrc_private). Unset vars collapse to empty so no %% marker is left behind.
 # Kept separate so it can be unit tested without running the full local setup.
+_public_github_orgs() {
+    local org
+    local -a orgs=()
+    if [[ -n "${TRUSTED_GITHUB_ORGS+x}" ]]; then
+        for org in "${TRUSTED_GITHUB_ORGS[@]}"; do
+            orgs+=("github.com/$org")
+        done
+    fi
+    local IFS=,
+    echo "${orgs[*]}" | sed 's/,/, /g'
+}
+
 _render_claude_md() {
     local src="$1"
     sed \
         -e "s/%%REVIEWERS%%/${GITHUB_REVIEWERS:-}/" \
+        -e "s|%%PUBLIC_GITHUB_ORGS%%|$(_public_github_orgs)|" \
         -e "s/%%JIRA_PROJECT%%/${JIRA_PROJECT:-}/" \
         -e "s/%%JIRA_ASSIGNEE%%/${JIRA_ASSIGNEE:-}/" \
         -e "s/%%JIRA_BOARD%%/${JIRA_BOARD:-}/" \
