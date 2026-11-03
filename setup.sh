@@ -120,6 +120,31 @@ _apply_auto_mode_environment() {
         else del(.autoMode) end' "$target") && echo "$updated" > "$target"
 }
 
+# Writes the permission rules and pins the classic renderer ("tui": "default"):
+# the fullscreen renderer draws on the alternate screen, which leaves tmux
+# copy-mode nothing to scroll. An unreadable settings file is moved to
+# <file>.invalid and rebuilt; if jq fails the file is left as it was.
+_update_claude_settings() {
+    local target="$1" mcp_allows="$2" updated
+    if [[ ! -f "$target" ]]; then
+        echo '{}' > "$target"
+    elif [[ "$(jq 'type == "object"' "$target" 2>/dev/null)" != "true" ]]; then
+        mv "$target" "$target.invalid"
+        echo "  WARNING: $target was not valid JSON; moved it to $target.invalid"
+        echo '{}' > "$target"
+    fi
+    if updated=$(jq --argjson mcp_allows "$mcp_allows" --argjson slack_write_denies "$(_slack_write_deny_rules)" '.permissions = {
+        "allow": (["Bash(*)", "Read(*)", "Edit(*)", "Edit(~/.bashrc_private)", "Write(*)", "WebFetch(*)"] + $mcp_allows),
+        "deny": (["Bash(rm -rf *)", "Bash(docker rm *)", "Bash(docker rmi *)", "Bash(kubectl delete *)", "Bash(kubectl apply *)", "Bash(kubectl scale *)", "Bash(kubectl rollout *)", "Bash(kubectl exec *)", "Bash(kubectl cordon *)", "Bash(kubectl drain *)", "Bash(knife *)", "Bash(gnife *)", "Bash(helm install *)", "Bash(helm upgrade *)", "Bash(helm uninstall *)", "Bash(terraform apply *)", "Bash(terraform destroy *)"] + $slack_write_denies)
+    } | .tui = "default"' "$target") && [[ -n "$updated" ]]; then
+        echo "$updated" > "$target"
+        echo "  Updated Claude Code permissions"
+    else
+        echo "  WARNING: could not update $target; left it unchanged" >&2
+        return 1
+    fi
+}
+
 # zdiff3 conflict markers arrived in git 2.35; older git rejects the setting.
 _merge_conflict_style() {
     local major=0 minor=0
@@ -179,7 +204,6 @@ _run_local() {
     mkdir -p "$HOME/.claude"
     if command -v jq >/dev/null 2>&1; then
         TARGET="$HOME/.claude/settings.json"
-        [[ ! -f "$TARGET" ]] && echo '{}' > "$TARGET"
 
         # Build MCP allow rules (e.g. "mcp__chat__*") from every server name found
         # in ~/.mcp_private.json and in any repo's .mcp.json under ~/git. Repos name
@@ -192,12 +216,7 @@ _run_local() {
         MCP_ALLOWS=$(jq -s '[.[].mcpServers // {} | keys[]] | unique | map("mcp__" + . + "__*")' "${MCP_NAME_FILES[@]}" 2>/dev/null)
         [[ -z "$MCP_ALLOWS" ]] && MCP_ALLOWS="[]"
 
-        UPDATED=$(jq --argjson mcp_allows "$MCP_ALLOWS" --argjson slack_write_denies "$(_slack_write_deny_rules)" '.permissions = {
-            "allow": (["Bash(*)", "Read(*)", "Edit(*)", "Edit(~/.bashrc_private)", "Write(*)", "WebFetch(*)"] + $mcp_allows),
-            "deny": ["Bash(rm -rf *)", "Bash(docker rm *)", "Bash(docker rmi *)", "Bash(kubectl delete *)", "Bash(kubectl apply *)", "Bash(kubectl scale *)", "Bash(kubectl rollout *)", "Bash(kubectl exec *)", "Bash(kubectl cordon *)", "Bash(kubectl drain *)", "Bash(knife *)", "Bash(gnife *)", "Bash(helm install *)", "Bash(helm upgrade *)", "Bash(helm uninstall *)", "Bash(terraform apply *)", "Bash(terraform destroy *)"] + $slack_write_denies
-        }' "$TARGET")
-        echo "$UPDATED" > "$TARGET"
-        echo "  Updated Claude Code permissions"
+        _update_claude_settings "$TARGET" "$MCP_ALLOWS"
         _apply_auto_mode_environment "$TARGET"
 
         # Install MCP servers at USER SCOPE so they are available in every repo.
