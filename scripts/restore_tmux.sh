@@ -76,7 +76,7 @@ case "$MODE" in
             echo "Restart tmux instead and restore once:"
             echo "  tmux kill-server; tnew"
         else
-            echo "Now restore: tnew (answer r)"
+            echo "Now restore: tnew (press Enter)"
         fi
         ;;
 esac

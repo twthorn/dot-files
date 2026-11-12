@@ -43,7 +43,7 @@ _tnew() {
     TNEW_TARGET=""
     if ! _has_sessions && [[ -e "$SAVED_LAYOUT" ]]; then
         local choice
-        read -r -p "No tmux sessions. [r]estore saved sessions or start [n]ew? [R/n] " choice
+        read -r -p "No tmux sessions. Press Enter to restore saved sessions, or n to start new: " choice
         if [[ "$choice" != [nN]* ]]; then
             _recover_tmux
             return
