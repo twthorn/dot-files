@@ -1,16 +1,14 @@
 #!/bin/bash
 
-# Tests claude_resume.sh: the first pane of each tmux session is resumed with
-# "$CLAUDE_COMMAND --resume <id>" only when it sits idle at a shell in a directory
-# that has a previous Claude conversation; other panes, busy panes and dirs with
-# no history are left alone. With --after-restore (panes still starting up) the
-# decision comes from the saved layout: every pane that was running Claude is
-# resumed (Claude may be recorded by its full path, Linux: .../node/v24/bin/claude),
-# or the first pane when it sat idle and no pane in the session ran Claude. Panes
-# in the same directory each get a different conversation, newest first. Before
-# typing into any pane, "$CLAUDE_COMMAND --version" runs once in the foreground
-# so a wrapper that logs in first (e.g. AWS SSO) asks once, not in every pane; if
-# that fails nothing is resumed.
+# Tests claude_resume.sh (`crestore [N]`): run inside a tmux session, it resumes
+# that session's Claude conversations ("$CLAUDE_COMMAND --resume <id>", newest
+# first) into the panes that were running Claude in the saved layout; with none
+# recorded, into the pane it was run from. N limits (or, with extra idle panes,
+# extends) how many come back; the default is one per recorded Claude pane.
+# Only panes idle at a shell are typed into, so it is safe to rerun. Before typing
+# into any pane, "$CLAUDE_COMMAND --version" runs once in the foreground so a
+# wrapper that logs in first (e.g. AWS SSO) asks once; if that fails nothing is
+# resumed. Claude may be recorded by its full path (Linux: .../node/v24/bin/claude).
 # Runs a throwaway tmux server (-L) and HOME; the fake claude logs its pane.
 
 set -u
@@ -22,16 +20,25 @@ CONF="$TEST_HOME/tmux.conf"
 printf 'set -g base-index 1\nsetw -g pane-base-index 1\nset -g default-shell /bin/bash\n' > "$CONF"
 export HOME="$TEST_HOME"
 export TMUX_CMD="tmux -L $SOCK -f $CONF"
-unset TMUX
+unset TMUX TMUX_PANE
 
 cleanup() { tmux -L "$SOCK" kill-server 2>/dev/null; rm -rf "$TEST_HOME"; }
 trap cleanup EXIT
 
-WITH_HISTORY="$TEST_HOME/git/acme/api"
+MULTI="$TEST_HOME/git/acme/multi"
+PLAIN="$TEST_HOME/git/acme/plain"
 NO_HISTORY="$TEST_HOME/git/acme/web"
-mkdir -p "$WITH_HISTORY" "$NO_HISTORY" "$TEST_HOME/bin" "$TEST_HOME/.tmux/resurrect"
-mkdir -p "$TEST_HOME/.claude/projects/${WITH_HISTORY//[^a-zA-Z0-9]/-}"
-touch "$TEST_HOME/.claude/projects/${WITH_HISTORY//[^a-zA-Z0-9]/-}/abc.jsonl"
+mkdir -p "$MULTI" "$PLAIN" "$NO_HISTORY" "$TEST_HOME/bin" "$TEST_HOME/.tmux/resurrect"
+conversation() { # dir id mmdd  (older dates are older conversations)
+    local project="$TEST_HOME/.claude/projects/${1//[^a-zA-Z0-9]/-}"
+    mkdir -p "$project"
+    touch -t "2026${3}1200" "$project/$2.jsonl"
+}
+conversation "$MULTI" new3 0203
+conversation "$MULTI" new2 0202
+conversation "$MULTI" new1 0201
+conversation "$MULTI" old0 0101
+conversation "$PLAIN" abc 0103
 RESUME_LOG="$TEST_HOME/resumed.log"
 LOGIN_LOG="$TEST_HOME/login.log"
 cat > "$TEST_HOME/bin/fake-claude" <<EOF
@@ -41,6 +48,17 @@ echo "\$TMUX_PANE \$PWD \$*" >> "$RESUME_LOG"
 EOF
 chmod +x "$TEST_HOME/bin/fake-claude"
 export CLAUDE_COMMAND="$TEST_HOME/bin/fake-claude"
+
+T=$'\t'
+{
+    echo "pane${T}multi${T}1${T}1${T}:*${T}1${T}t${T}:$MULTI${T}1${T}bash${T}:"
+    echo "pane${T}multi${T}1${T}1${T}:*${T}2${T}t${T}:$MULTI${T}0${T}claude${T}:claude --settings {} -r"
+    echo "pane${T}multi${T}1${T}1${T}:*${T}3${T}t${T}:$MULTI${T}0${T}claude${T}:/home/me/.nvm/versions/node/v24.11.1/bin/claude -r"
+    echo "pane${T}multi${T}2${T}0${T}:${T}1${T}t${T}:$MULTI${T}1${T}claude${T}:claude"
+    echo "pane${T}multi${T}3${T}0${T}:${T}1${T}t${T}:$MULTI${T}1${T}vim${T}:vim notes.md"
+    echo "pane${T}plain${T}1${T}1${T}:*${T}1${T}t${T}:$PLAIN${T}1${T}bash${T}:"
+    echo "pane${T}plain${T}1${T}1${T}:*${T}2${T}t${T}:$PLAIN${T}0${T}bash${T}:"
+} > "$TEST_HOME/.tmux/resurrect/last"
 
 # shellcheck disable=SC1091
 source "$SCRIPT_DIR/claude_resume.sh"
@@ -59,75 +77,60 @@ resumed() { # wait for the panes' shells to run what was typed, then list "pane 
     sleep 1
     sort "$RESUME_LOG" 2>/dev/null | tr '\n' ';'
 }
-
-$TMUX_CMD new-session -d -s idle -c "$WITH_HISTORY"
-$TMUX_CMD new-window -d -t idle: -c "$WITH_HISTORY"
-$TMUX_CMD new-session -d -s nohistory -c "$NO_HISTORY"
-$TMUX_CMD new-session -d -s busy -c "$WITH_HISTORY" 'sleep 300'
-sleep 0.5
-
-FAKE_LOGIN_EXIT=1 _resume_claude >/dev/null 2>&1
-check "failed login resumes nothing" "" "$(resumed)"
-rm -f "$LOGIN_LOG" "$RESUME_LOG"
-
-_resume_claude >/dev/null
-check "only the idle first pane with history is resumed" \
-    "$(pane_of idle:1.1) $WITH_HISTORY --resume abc;" "$(resumed)"
-check "logs in once before resuming" "1" "$(wc -l < "$LOGIN_LOG" | tr -d ' ')"
-
-rm -f "$RESUME_LOG" "$LOGIN_LOG"
-$TMUX_CMD kill-session -t "=idle"
-_resume_claude >/dev/null
-check "no login when there is nothing to resume" "absent" "$([[ -e "$LOGIN_LOG" ]] && echo present || echo absent)"
-
-rm -f "$RESUME_LOG"
-conversation() { # dir id mmdd  (older dates are older conversations)
-    touch -t "2026${3}1200" "$TEST_HOME/.claude/projects/${1//[^a-zA-Z0-9]/-}/$2.jsonl"
+expect() { # dir "target id"... -> the resumed() form
+    local dir="$1" pair; shift
+    for pair in "$@"; do echo "$(pane_of "${pair% *}") $dir --resume ${pair#* }"; done | sort | tr '\n' ';'
 }
-MULTI="$TEST_HOME/git/acme/multi"
-mkdir -p "$MULTI" "$TEST_HOME/.claude/projects/${MULTI//[^a-zA-Z0-9]/-}"
-conversation "$WITH_HISTORY" abc 0103
-conversation "$WITH_HISTORY" def 0102
-conversation "$WITH_HISTORY" ghi 0101
-conversation "$MULTI" new3 0203
-conversation "$MULTI" new2 0202
-conversation "$MULTI" new1 0201
-conversation "$MULTI" old0 0101
-T=$'\t'
-{
-    echo "pane${T}wasidle${T}1${T}1${T}:*${T}1${T}t${T}:$WITH_HISTORY${T}1${T}bash${T}:"
-    echo "pane${T}wasclaude${T}1${T}1${T}:*${T}1${T}t${T}:$WITH_HISTORY${T}1${T}claude${T}:claude --settings {} -r"
-    echo "pane${T}wasclaudepath${T}1${T}1${T}:*${T}1${T}t${T}:$WITH_HISTORY${T}1${T}claude${T}:/home/me/.nvm/versions/node/v24.11.1/bin/claude -r"
-    echo "pane${T}extra${T}1${T}1${T}:*${T}1${T}t${T}:$WITH_HISTORY${T}1${T}claude${T}:claude"
-    echo "pane${T}wasvim${T}1${T}1${T}:*${T}1${T}t${T}:$WITH_HISTORY${T}1${T}vim${T}:vim notes.md"
-    echo "pane${T}wasvim${T}2${T}0${T}:${T}1${T}t${T}:$WITH_HISTORY${T}1${T}bash${T}:"
-    echo "pane${T}multi${T}1${T}1${T}:*${T}1${T}t${T}:$MULTI${T}1${T}bash${T}:"
-    echo "pane${T}multi${T}1${T}1${T}:*${T}2${T}t${T}:$MULTI${T}0${T}claude${T}:claude --continue"
-    echo "pane${T}multi${T}1${T}1${T}:*${T}3${T}t${T}:$MULTI${T}0${T}claude${T}:claude"
-    echo "pane${T}multi${T}2${T}0${T}:${T}1${T}t${T}:$MULTI${T}1${T}claude${T}:claude -r"
-} > "$TEST_HOME/.tmux/resurrect/last"
-tmux -L "$SOCK" kill-server 2>/dev/null
-for s in wasidle wasclaude wasclaudepath extra wasvim; do
-    $TMUX_CMD new-session -d -s "$s" -c "$WITH_HISTORY"
-done
-$TMUX_CMD new-window -d -t wasvim:2 -c "$WITH_HISTORY"
+crestore_from() { # pane [N]
+    local pane="$1"; shift
+    rm -f "$RESUME_LOG" "$LOGIN_LOG"
+    TMUX_PANE="$(pane_of "$pane")" _crestore "$@"
+}
+
 $TMUX_CMD new-session -d -s multi -c "$MULTI"
 $TMUX_CMD split-window -d -t multi:1.1 -c "$MULTI"
 $TMUX_CMD split-window -d -t multi:1.2 -c "$MULTI"
 $TMUX_CMD new-window -d -t multi:2 -c "$MULTI"
+$TMUX_CMD new-window -d -t multi:3 -c "$MULTI" 'sleep 300'
+$TMUX_CMD new-session -d -s plain -c "$PLAIN"
+$TMUX_CMD split-window -d -t plain:1.1 -c "$PLAIN"
+$TMUX_CMD new-session -d -s nohistory -c "$NO_HISTORY"
 sleep 0.5
 
-_resume_claude --after-restore >/dev/null
-check "after restore: every pane that ran claude, and idle first panes, get the newest conversations; a pane with no conversation left and panes restoring another program are skipped" \
-    "$({
-        echo "$(pane_of wasidle:1.1) $WITH_HISTORY --resume abc"
-        echo "$(pane_of wasclaude:1.1) $WITH_HISTORY --resume def"
-        echo "$(pane_of wasclaudepath:1.1) $WITH_HISTORY --resume ghi"
-        echo "$(pane_of multi:1.2) $MULTI --resume new3"
-        echo "$(pane_of multi:1.3) $MULTI --resume new2"
-        echo "$(pane_of multi:2.1) $MULTI --resume new1"
-    } | sort | tr '\n' ';')" \
-    "$(resumed)"
+rm -f "$RESUME_LOG"
+if _crestore >/dev/null 2>&1; then r=ran; else r=refused; fi
+check "outside tmux it refuses" "refused" "$r"
+check "outside tmux nothing is resumed" "" "$(resumed)"
+
+FAKE_LOGIN_EXIT=1 crestore_from multi:1.1 >/dev/null 2>&1
+check "failed login resumes nothing" "" "$(resumed)"
+
+crestore_from multi:1.1 >/dev/null
+check "default: every pane that ran claude gets its own conversation, newest first" \
+    "$(expect "$MULTI" "multi:1.2 new3" "multi:1.3 new2" "multi:2.1 new1")" "$(resumed)"
+check "logs in once before resuming" "1" "$(wc -l < "$LOGIN_LOG" | tr -d ' ')"
+
+crestore_from multi:1.1 1 >/dev/null
+check "N=1: only the first claude pane and the newest conversation" \
+    "$(expect "$MULTI" "multi:1.2 new3")" "$(resumed)"
+
+crestore_from multi:1.1 9 >/dev/null
+check "N beyond the claude panes spills into other idle panes, skips the busy one, stops when conversations run out" \
+    "$(expect "$MULTI" "multi:1.2 new3" "multi:1.3 new2" "multi:2.1 new1" "multi:1.1 old0")" "$(resumed)"
+
+$TMUX_CMD respawn-pane -k -t multi:1.3 'sleep 300'
+sleep 0.3
+crestore_from multi:1.1 >/dev/null
+check "a claude pane that is busy now is left alone" \
+    "$(expect "$MULTI" "multi:1.2 new3" "multi:2.1 new2")" "$(resumed)"
+
+crestore_from plain:1.2 >/dev/null
+check "no claude pane recorded: the pane it was run from gets the newest conversation" \
+    "$(expect "$PLAIN" "plain:1.2 abc")" "$(resumed)"
+
+crestore_from nohistory:1.1 >/dev/null
+check "no history: nothing resumed" "" "$(resumed)"
+check "no history: no login" "absent" "$([[ -e "$LOGIN_LOG" ]] && echo present || echo absent)"
 
 if [[ "$FAIL" -eq 0 ]]; then
     echo "ALL PASS"

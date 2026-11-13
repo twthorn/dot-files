@@ -202,7 +202,7 @@ alias t="tmux attach"
 alias tnew='bash ~/.local/bin/tmux_recover.sh'
 alias trestore='bash ~/.local/bin/restore_tmux.sh'
 alias tpurge='bash ~/.local/bin/purge_tmux.sh'
-alias tclaude='bash ~/.local/bin/claude_resume.sh'
+alias crestore='bash ~/.local/bin/claude_resume.sh'
 
 # python
 if command -v pyenv 1>/dev/null 2>&1; then

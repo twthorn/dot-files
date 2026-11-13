@@ -3,8 +3,8 @@
 # Tests tmux_recover.sh: starting a fresh server and restoring the saved layout
 # must reproduce each window's pane count exactly (no duplicate splits), leave no
 # placeholder session behind, and refuse to restore into an already-running
-# server. After a restore, Claude is resumed in each session's first pane, each
-# with its own conversation (see test_claude_resume.sh for the rules). Runs the real tmux-resurrect restore against a throwaway server
+# server. A restore brings back panes only: Claude is not resumed anywhere
+# (each session opts in with crestore, see test_claude_resume.sh). Runs the real tmux-resurrect restore against a throwaway server
 # (-L recovertest_$$) and a throwaway HOME so real sessions/backups are untouched.
 
 set -u
@@ -71,8 +71,7 @@ _recover_tmux >/dev/null
 check "restore reproduces saved pane counts" "alpha:1=1 alpha:2=2 beta:1=1" "$(layout)"
 check "no placeholder session left"          "alpha beta" "$($TMUX_CMD list-sessions -F '#{session_name}' | sort | tr '\n' ' ' | sed 's/ *$//')"
 sleep 1
-first_panes="$(for s in alpha beta; do $TMUX_CMD display-message -p -t "=$s:1.1" '#{pane_id}'; done | sort | tr '\n' ' ')"
-check "claude resumed in each session's first pane" "$first_panes" "$(sort "$RESUME_LOG" 2>/dev/null | tr '\n' ' ')"
+check "claude is not resumed by the restore" "" "$(sort "$RESUME_LOG" 2>/dev/null | tr '\n' ' ')"
 
 if _recover_tmux >/dev/null; then r=ran; else r=refused; fi
 check "refuses when server already running"  "refused" "$r"

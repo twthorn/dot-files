@@ -8,8 +8,9 @@
 # server; restoring into live windows splits the saved panes into them. So this
 # refuses if tmux already has sessions, picks the best backup (see
 # restore_tmux.sh --auto), starts the server with a throwaway placeholder
-# session, runs the restore, and removes the placeholder. It then resumes Claude
-# in each restored session's first pane (see claude_resume.sh).
+# session, runs the restore, and removes the placeholder. Claude is not resumed:
+# doing that in every session at once ran the machine out of memory, so each
+# session opts in with `crestore` (see claude_resume.sh).
 #
 # Usage: tmux_recover.sh   (alias: tnew)
 
@@ -29,8 +30,7 @@ _recover_tmux() {
     $TMUX_CMD new-session -d -s "$PLACEHOLDER_SESSION"
     $TMUX_CMD run-shell "$RESURRECT_RESTORE"
     $TMUX_CMD kill-session -t "=$PLACEHOLDER_SESSION" 2>/dev/null
-    echo "Restored $($TMUX_CMD list-sessions 2>/dev/null | wc -l | tr -d ' ') session(s)."
-    bash "$RECOVER_DIR/claude_resume.sh" --after-restore
+    echo "Restored $($TMUX_CMD list-sessions 2>/dev/null | wc -l | tr -d ' ') session(s). In a session, \`crestore [N]\` brings its Claude conversations back."
 }
 
 _has_sessions() {

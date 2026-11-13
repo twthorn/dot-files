@@ -47,5 +47,5 @@ GOV_HOSTS=(
     "your-gov-host-2"
 )
 
-# Command that launches Claude Code; tnew/tclaude run "<it> --resume <id>" to resume it.
+# Command that launches Claude Code; crestore runs "<it> --resume <id>" to resume it.
 CLAUDE_COMMAND="claude"
