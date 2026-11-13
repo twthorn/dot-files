@@ -34,6 +34,12 @@
 - Default reviewers: %%REVIEWERS%%
 - Only add reviewers when explicitly asked (e.g. "add default reviewers")
 
+# PR Review Feedback
+- Applies to repos on the company's GitHub Enterprise host (work repos), not personal github.com repos.
+- After pushing changes that address review feedback, reply on the PR: for each review comment, say what was changed (or why it was not) so the reviewer can follow along without re-reading the diff.
+- Then re-request review from any reviewer that is a bot or automation (e.g. an AI review bot) so its re-review runs on the new commits — always, after every round of fixes.
+- Do not re-request review from human reviewers unless asked; a human reviewer follows the PR on their own.
+
 # Code Style
 - Write self-documenting code with clear variable names, function names, and test names. Default to no comments.
 - Only add comments when behavior is genuinely non-obvious and cannot be clarified through naming or structure alone.
