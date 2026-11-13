@@ -3,8 +3,8 @@
 # Tests tmux_recover.sh: starting a fresh server and restoring the saved layout
 # must reproduce each window's pane count exactly (no duplicate splits), leave no
 # placeholder session behind, and refuse to restore into an already-running
-# server. After a restore, Claude is resumed in each session's first pane (see
-# test_claude_resume.sh for the rules). Runs the real tmux-resurrect restore against a throwaway server
+# server. After a restore, Claude is resumed in each session's first pane, each
+# with its own conversation (see test_claude_resume.sh for the rules). Runs the real tmux-resurrect restore against a throwaway server
 # (-L recovertest_$$) and a throwaway HOME so real sessions/backups are untouched.
 
 set -u
@@ -39,7 +39,7 @@ T=$'\t'
 } > "$SAVE_DIR/tmux_resurrect_20260101T000000.txt"
 ln -sf tmux_resurrect_20260101T000000.txt "$SAVE_DIR/last"
 mkdir -p "$TEST_HOME/bin" "$TEST_HOME/.claude/projects/${TEST_HOME//[^a-zA-Z0-9]/-}"
-touch "$TEST_HOME/.claude/projects/${TEST_HOME//[^a-zA-Z0-9]/-}/abc.jsonl"
+touch "$TEST_HOME/.claude/projects/${TEST_HOME//[^a-zA-Z0-9]/-}/abc.jsonl" "$TEST_HOME/.claude/projects/${TEST_HOME//[^a-zA-Z0-9]/-}/def.jsonl"
 RESUME_LOG="$TEST_HOME/resumed.log"
 printf '#!/bin/sh\n[ "$1" = --version ] && exit 0\necho "$TMUX_PANE" >> %s\n' "$RESUME_LOG" > "$TEST_HOME/bin/fake-claude"
 chmod +x "$TEST_HOME/bin/fake-claude"
