@@ -174,6 +174,22 @@ _configure_delta() {
     echo "  Configured delta as git pager"
 }
 
+# ActivityWatch (installed by install_dependencies.sh on macOS) only tracks while
+# its tray app runs, so make it a Login Item and start it now if it is not up.
+_start_activitywatch_at_login() {
+    local app="/Applications/ActivityWatch.app"
+    [[ -d "$app" ]] || { echo "ActivityWatch not installed; skipping"; return 0; }
+    if ! osascript -e 'tell application "System Events" to get the name of every login item' 2>/dev/null | tr ',' '\n' | grep -qx ' *ActivityWatch'; then
+        osascript -e "tell application \"System Events\" to make login item at end with properties {path:\"$app\", hidden:true}" >/dev/null \
+            && echo "ActivityWatch added to Login Items."
+    fi
+    if ! pgrep -qx aw-qt; then
+        open -g "$app" && echo "ActivityWatch started."
+    fi
+    echo "ActivityWatch tracking at login."
+    echo
+}
+
 # --- Local setup ---
 _run_local() {
 
@@ -363,6 +379,8 @@ _run_local() {
         defaults write com.googlecode.iterm2 sshIntegrationLevel -int 0
         echo "iTerm2 SSH shell integration disabled."
         echo
+
+        _start_activitywatch_at_login
 
         if [[ "$NEEDS_RESTART" == "true" ]]; then
             echo "=============================================="

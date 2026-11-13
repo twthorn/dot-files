@@ -38,6 +38,15 @@ if [[ "$OS" == "Darwin" ]]; then
             brew install "$pkg"
         fi
     done
+
+    # ActivityWatch tracks time spent per app/window. Laptops only: it is a GUI
+    # tray app, and the remote hosts are headless Linux boxes.
+    if brew list --cask activitywatch &>/dev/null; then
+        echo "  activitywatch: already installed"
+    else
+        echo "  activitywatch: installing..."
+        brew install --cask activitywatch
+    fi
     echo
 
     # Add Homebrew bash to allowed shells if not already there
