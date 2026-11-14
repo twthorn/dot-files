@@ -32,17 +32,20 @@ source "$SETUP"
 TMP="$(mktemp)"
 cat > "$TMP" <<'EOF'
 - Default reviewers: %%REVIEWERS%%
+- Bot reviewers: %%REVIEW_BOTS%%
 - Create tickets in %%JIRA_PROJECT%% assigned to %%JIRA_ASSIGNEE%% on board %%JIRA_BOARD%%.
 - Public repos live under %%PUBLIC_GITHUB_ORGS%%.
 EOF
 
 GITHUB_REVIEWERS="alice bob"
+GITHUB_REVIEW_BOTS="review-bot"
 JIRA_PROJECT="STREAM"
 JIRA_ASSIGNEE="tthornton"
 JIRA_BOARD="STREAM"
 TRUSTED_GITHUB_ORGS=("acmehq" "acme-labs")
 OUT="$(_render_claude_md "$TMP")"
 check_contains "reviewers substituted"    "$OUT" "Default reviewers: alice bob"
+check_contains "review bots substituted"  "$OUT" "Bot reviewers: review-bot"
 check_contains "project substituted"      "$OUT" "in STREAM"
 check_contains "assignee substituted"     "$OUT" "assigned to tthornton"
 check_contains "board substituted"        "$OUT" "board STREAM."
@@ -51,7 +54,7 @@ check_absent   "no leftover placeholder"  "$OUT" "%%"
 ERR="$(_render_claude_md "$TMP" 2>&1 >/dev/null)"
 if [[ -z "$ERR" ]]; then echo "  ok: render writes no errors"; else echo "  FAIL: render stderr: $ERR"; FAIL=1; fi
 
-unset GITHUB_REVIEWERS JIRA_PROJECT JIRA_ASSIGNEE JIRA_BOARD TRUSTED_GITHUB_ORGS
+unset GITHUB_REVIEWERS GITHUB_REVIEW_BOTS JIRA_PROJECT JIRA_ASSIGNEE JIRA_BOARD TRUSTED_GITHUB_ORGS
 OUT="$(_render_claude_md "$TMP")"
 check_absent "unset vars leave no placeholder" "$OUT" "%%"
 

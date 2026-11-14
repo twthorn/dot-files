@@ -80,6 +80,7 @@ _render_claude_md() {
     local src="$1"
     sed \
         -e "s/%%REVIEWERS%%/${GITHUB_REVIEWERS:-}/" \
+        -e "s/%%REVIEW_BOTS%%/${GITHUB_REVIEW_BOTS:-}/" \
         -e "s|%%PUBLIC_GITHUB_ORGS%%|$(_public_github_orgs)|" \
         -e "s/%%JIRA_PROJECT%%/${JIRA_PROJECT:-}/" \
         -e "s/%%JIRA_ASSIGNEE%%/${JIRA_ASSIGNEE:-}/" \
@@ -134,7 +135,7 @@ _update_claude_settings() {
         echo '{}' > "$target"
     fi
     if updated=$(jq --argjson mcp_allows "$mcp_allows" --argjson slack_write_denies "$(_slack_write_deny_rules)" '.permissions = {
-        "allow": (["Bash(*)", "Read(*)", "Edit(*)", "Edit(~/.bashrc_private)", "Write(*)", "WebFetch(*)"] + $mcp_allows),
+        "allow": (["Bash(*)", "Read", "Edit", "Write", "WebFetch(*)"] + $mcp_allows),
         "deny": (["Bash(rm -rf *)", "Bash(docker rm *)", "Bash(docker rmi *)", "Bash(kubectl delete *)", "Bash(kubectl apply *)", "Bash(kubectl scale *)", "Bash(kubectl rollout *)", "Bash(kubectl exec *)", "Bash(kubectl cordon *)", "Bash(kubectl drain *)", "Bash(knife *)", "Bash(gnife *)", "Bash(helm install *)", "Bash(helm upgrade *)", "Bash(helm uninstall *)", "Bash(terraform apply *)", "Bash(terraform destroy *)"] + $slack_write_denies)
     } | .tui = "default"' "$target") && [[ -n "$updated" ]]; then
         echo "$updated" > "$target"
