@@ -80,7 +80,6 @@ _render_claude_md() {
     local src="$1"
     sed \
         -e "s/%%REVIEWERS%%/${GITHUB_REVIEWERS:-}/" \
-        -e "s/%%REVIEW_BOTS%%/${GITHUB_REVIEW_BOTS:-}/" \
         -e "s|%%PUBLIC_GITHUB_ORGS%%|$(_public_github_orgs)|" \
         -e "s/%%JIRA_PROJECT%%/${JIRA_PROJECT:-}/" \
         -e "s/%%JIRA_ASSIGNEE%%/${JIRA_ASSIGNEE:-}/" \

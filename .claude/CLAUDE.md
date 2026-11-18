@@ -35,12 +35,9 @@
 - Only add reviewers when explicitly asked (e.g. "add default reviewers")
 
 # PR Review Feedback
-- Applies to repos on the company's GitHub Enterprise host (work repos), not personal github.com repos.
 - After pushing changes that address review feedback, reply on the PR: for each review comment, say what was changed (or why it was not) so the reviewer can follow along without re-reading the diff.
-- Then re-request review from every bot reviewer — always, after every round of fixes. Bot reviewers: %%REVIEW_BOTS%% (also any other reviewer on the PR whose login is clearly an automation).
-- Re-requesting is the GitHub "Re-request review" action (the arrows icon next to the reviewer), not a comment. Do it with `gh api -X POST repos/<owner>/<repo>/pulls/<number>/requested_reviewers -f 'reviewers[]=<bot-login>'` (or `gh pr edit <number> --add-reviewer <bot-login>`), then confirm the bot appears under `requested_reviewers` on `gh api repos/<owner>/<repo>/pulls/<number>`.
-- Fallback only: if the request fails (error, or the bot is still missing from `requested_reviewers` afterwards), post a top-level PR comment asking the bot to re-review (e.g. "@<bot-login> please re-review"), and say in your reply that the re-request did not go through so the comment was used instead. Never start with the comment: when the request works, a comment on top is noise.
-- Do not dismiss the bot's previous review and do not re-request human reviewers unless asked; a human reviewer follows the PR on their own.
+- Never re-request review on your own, from a bot or a person: bot reviewers are non-deterministic and can loop indefinitely, and human reviewers follow the PR themselves. Re-request only when explicitly asked, and only the reviewers named.
+- When asked, re-requesting is the GitHub "Re-request review" action, not a comment: `gh api -X POST repos/<owner>/<repo>/pulls/<number>/requested_reviewers -f 'reviewers[]=<login>'`, then confirm the login appears under `requested_reviewers` on `gh api repos/<owner>/<repo>/pulls/<number>`. Only if that fails, fall back to a top-level comment asking for the re-review and say so in your reply.
 
 # Code Style
 - Write self-documenting code with clear variable names, function names, and test names. Default to no comments.
