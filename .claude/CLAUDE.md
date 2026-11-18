@@ -35,9 +35,8 @@
 - Only add reviewers when explicitly asked (e.g. "add default reviewers")
 
 # PR Review Feedback
-- After pushing changes that address review feedback, reply on the PR: for each review comment, say what was changed (or why it was not) so the reviewer can follow along without re-reading the diff.
-- Never re-request review on your own, from a bot or a person: bot reviewers are non-deterministic and can loop indefinitely, and human reviewers follow the PR themselves. Re-request only when explicitly asked, and only the reviewers named.
-- When asked, re-requesting is the GitHub "Re-request review" action, not a comment: `gh api -X POST repos/<owner>/<repo>/pulls/<number>/requested_reviewers -f 'reviewers[]=<login>'`, then confirm the login appears under `requested_reviewers` on `gh api repos/<owner>/<repo>/pulls/<number>`. Only if that fails, fall back to a top-level comment asking for the re-review and say so in your reply.
+- Do not reply to review comments or re-request review (from a bot or a person) unless explicitly asked; bot reviewers are non-deterministic and can loop indefinitely, and human reviewers follow the PR themselves. When asked, do only what was named.
+- When asked to re-request, use the GitHub "Re-request review" action, not a comment: `gh api -X POST repos/<owner>/<repo>/pulls/<number>/requested_reviewers -f 'reviewers[]=<login>'`, then confirm the login appears under `requested_reviewers` on `gh api repos/<owner>/<repo>/pulls/<number>`. Only if that fails, fall back to a top-level comment asking for the re-review and say so in your reply.
 
 # Code Style
 - Write self-documenting code with clear variable names, function names, and test names. Default to no comments.
