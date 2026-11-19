@@ -10,6 +10,11 @@
 - Build every GitHub link from the repo's own `origin` remote (`git -C ~/git/<owner>/<repo> remote get-url origin`), never from memory: that gives the host (github.com or the enterprise host) and the owner/repo. The work org's public github.com repos and forks live under %%PUBLIC_GITHUB_ORGS%%; a copy of the same repo under any other org — even one that still loads — is the wrong link. If the repo isn't checked out on this host, clone it to `~/git/<owner>/<repo>` (or check another host) before linking.
 - Verify every link before sharing it. Open or fetch the URL yourself (e.g. WebFetch, `curl -sI`, `gh api`, or checking that the referenced file, commit, and line range exist), and confirm it resolves and points at the content you are citing. Never share a URL built from memory or by guessing at its structure without checking it. If a link cannot be verified — for example, it sits behind a login or on a host you cannot reach — say so explicitly next to the link.
 
+# Starting Work in a Repo
+- A new request starts from the latest default branch. Before the first change, check `git status` and `git branch --show-current`: if the repo is on the default branch (`master`/`main`, per `git symbolic-ref refs/remotes/origin/HEAD`) with no staged or unstaged changes, run `git pull --ff-only` on it, then create the work branch from there.
+- If the repo is already on a work branch, or has staged or uncommitted changes, do not switch branches or pull: that is work in progress. Continue there, and say so if the request looks unrelated to that branch.
+- Never `git pull` with a merge or rebase on your own; if `--ff-only` fails, report it and stop.
+
 # Commits
 - Always use `git commit -s` (sign-off) on all commits.
 - Branch names must be: `$USER_<ticket-id>` (e.g. `tthornton_PROJ-123`)
